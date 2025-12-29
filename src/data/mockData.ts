@@ -1,209 +1,264 @@
-import type { Product, DashboardStats, ProductData } from '../types';
+import type { Product, StatCardData, ProductAnalysisRow, ModelCoefficient, PriceRecommendation } from '../types';
 
-export const dashboardStats: DashboardStats = {
-  opportunitiesFound: 47,
-  potentialProfitUplift: 44594.47,
-  productsOptimized: 48,
-  averageElasticity: -1.200
-};
-
-export const topMoversData: Product[] = [
+export const statsData: StatCardData[] = [
   {
-    id: '1',
+    icon: 'target',
+    value: '47',
+    label: 'Opportunities Found',
+    color: 'from-indigo-500 to-purple-600'
+  },
+  {
+    icon: 'trending-up',
+    value: '$44594.47',
+    label: 'Potential Profit Uplift',
+    color: 'from-teal-400 to-emerald-500'
+  },
+  {
+    icon: 'file-text',
+    value: '48',
+    label: 'Products Optimized',
+    color: 'from-amber-400 to-orange-500'
+  },
+  {
+    icon: 'activity',
+    value: '-1.200',
+    label: 'Average Elasticity',
+    color: 'from-rose-400 to-red-500'
+  }
+];
+
+export const topMovers: Product[] = [
+  {
+    id: '723',
     name: 'Chicken Pepperoni & Cheese Bagel 723',
     currentPrice: 393.70,
     recommendedPrice: 343.08,
-    productCost: 275.59,
     predictedProfit: 92.01,
     profitGainLoss: 6.21,
     demandChange: 44.37,
     bpe: -0.918,
-    elasticity: -0.9181
+    category: 'Food',
+    stockLevel: 45,
+    competitorPrice: 385.00,
+    margin: 32.5,
+    lastPriceChange: '2024-11-15',
+    priceHistory: [
+      { date: '2024-11-15', price: 393.70, reason: 'Cost increase', profitImpact: -120 },
+      { date: '2024-09-01', price: 380.00, reason: 'Seasonal adjustment', profitImpact: 450 },
+      { date: '2024-06-10', price: 375.00, reason: 'Market analysis', profitImpact: 200 }
+    ]
   },
   {
-    id: '2',
+    id: '734',
     name: 'Chipotle Chicken Sandwich & Coffee Combo 734',
     currentPrice: 427.24,
     recommendedPrice: 341.79,
-    productCost: 250.49,
     predictedProfit: 91.30,
-    profitGainLoss: 187.56,
-    demandChange: 375.42,
-    bpe: -6.854,
-    elasticity: -6.8543
+    profitGainLoss: 787.56,
+    demandChange: 3978.20,
+    bpe: -2.333,
+    category: 'Combo',
+    stockLevel: 120,
+    competitorPrice: 410.00,
+    margin: 28.3,
+    lastPriceChange: '2024-10-20',
+    priceHistory: [
+      { date: '2024-10-20', price: 427.24, reason: 'Premium positioning', profitImpact: 350 },
+      { date: '2024-08-15', price: 415.00, reason: 'Competitor match', profitImpact: 180 }
+    ]
   },
   {
-    id: '3',
-    name: 'Latte 701',
-    currentPrice: 275.52,
-    recommendedPrice: 249.81,
-    productCost: 204.23,
-    predictedProfit: 127.11,
-    profitGainLoss: 134.54,
-    demandChange: 165.30,
-    bpe: -3.458,
-    elasticity: -3.4582
+    id: '720',
+    name: 'Iced Latte 720',
+    currentPrice: 214.85,
+    recommendedPrice: 171.88,
+    predictedProfit: 795.91,
+    profitGainLoss: 144.70,
+    demandChange: 104.33,
+    bpe: -2.865,
+    category: 'Beverage',
+    stockLevel: 8,
+    competitorPrice: 195.00,
+    margin: 45.2,
+    lastPriceChange: '2024-12-01',
+    priceHistory: [
+      { date: '2024-12-01', price: 214.85, reason: 'Holiday pricing', profitImpact: 520 },
+      { date: '2024-10-05', price: 205.00, reason: 'Standard increase', profitImpact: 220 }
+    ]
   },
   {
-    id: '4',
-    name: 'Cappuccino 702',
-    currentPrice: 280.15,
-    recommendedPrice: 255.30,
-    productCost: 198.45,
-    predictedProfit: 142.60,
-    profitGainLoss: 125.80,
-    demandChange: 148.92,
-    bpe: -2.987,
-    elasticity: -2.9871
+    id: '703',
+    name: 'Latte 703',
+    currentPrice: 198.49,
+    recommendedPrice: 158.79,
+    predictedProfit: 75.63,
+    profitGainLoss: 140.06,
+    demandChange: 709.42,
+    bpe: -3.021,
+    category: 'Beverage',
+    stockLevel: 15,
+    competitorPrice: 180.00,
+    margin: 42.8,
+    lastPriceChange: '2024-11-10',
+    priceHistory: [
+      { date: '2024-11-10', price: 198.49, reason: 'Cost adjustment', profitImpact: -80 }
+    ]
   },
   {
-    id: '5',
-    name: 'Flat White 703',
-    currentPrice: 295.30,
-    recommendedPrice: 268.50,
-    productCost: 210.20,
-    predictedProfit: 155.40,
-    profitGainLoss: 112.30,
-    demandChange: 132.45,
-    bpe: -2.456,
-    elasticity: -2.4562
+    id: '718',
+    name: 'Original Icedpresso 718',
+    currentPrice: 237.85,
+    recommendedPrice: 217.49,
+    predictedProfit: 712.14,
+    profitGainLoss: 10.08,
+    demandChange: 22.42,
+    bpe: -1.957,
+    category: 'Beverage',
+    stockLevel: 92,
+    competitorPrice: 225.00,
+    margin: 38.5,
+    lastPriceChange: '2024-09-22',
+    priceHistory: [
+      { date: '2024-09-22', price: 237.85, reason: 'Competitor analysis', profitImpact: 150 }
+    ]
   },
   {
-    id: '6',
-    name: 'Espresso 700',
-    currentPrice: 310.22,
-    recommendedPrice: 280.45,
-    productCost: 225.80,
-    predictedProfit: 168.90,
-    profitGainLoss: 98.75,
-    demandChange: 115.60,
-    bpe: -2.145,
-    elasticity: -2.1452
+    id: '745',
+    name: 'Strawberry Cream MilkShake 745',
+    currentPrice: 224.54,
+    recommendedPrice: 256.62,
+    predictedProfit: 71.63,
+    profitGainLoss: 2.03,
+    demandChange: -19.96,
+    bpe: -0.595,
+    category: 'Beverage',
+    stockLevel: 156,
+    competitorPrice: 240.00,
+    margin: 35.7,
+    lastPriceChange: '2024-08-30',
+    priceHistory: [
+      { date: '2024-08-30', price: 224.54, reason: 'Summer promotion', profitImpact: -200 }
+    ]
   },
   {
-    id: '7',
-    name: 'Americano 705',
-    currentPrice: 265.88,
-    recommendedPrice: 240.50,
-    productCost: 190.30,
-    predictedProfit: 135.20,
-    profitGainLoss: 145.67,
-    demandChange: 178.90,
-    bpe: -3.876,
-    elasticity: -3.8762
+    id: '748',
+    name: 'Oatmeal Cranberry Cookie 748',
+    currentPrice: 100.32,
+    recommendedPrice: 80.26,
+    predictedProfit: 691.51,
+    profitGainLoss: 487.95,
+    demandChange: 393.46,
+    bpe: -6.473,
+    category: 'Snack',
+    stockLevel: 3,
+    competitorPrice: 95.00,
+    margin: 18.5,
+    lastPriceChange: '2024-12-15',
+    priceHistory: [
+      { date: '2024-12-15', price: 100.32, reason: 'Clear stock', profitImpact: -450 },
+      { date: '2024-11-01', price: 110.00, reason: 'Standard pricing', profitImpact: 100 }
+    ]
   },
   {
-    id: '8',
-    name: 'Mocha 706',
-    currentPrice: 320.45,
-    recommendedPrice: 290.80,
-    productCost: 235.60,
-    predictedProfit: 180.50,
-    profitGainLoss: 85.40,
-    demandChange: 98.20,
-    bpe: -1.887,
-    elasticity: -1.8872
+    id: '705',
+    name: 'Mini Choux 705',
+    currentPrice: 131.22,
+    recommendedPrice: 104.97,
+    predictedProfit: 69.69,
+    profitGainLoss: 22.24,
+    demandChange: 144.77,
+    bpe: -2.128
   },
   {
-    id: '9',
+    id: '704',
     name: 'Cappuccino 704',
     currentPrice: 107.62,
     recommendedPrice: 158.10,
-    productCost: 50.40,
     predictedProfit: 680.91,
     profitGainLoss: 439.18,
     demandChange: 369.47,
-    bpe: -5.768,
-    elasticity: -5.7680
+    bpe: -5.768
   }
 ];
 
-export const sampleProductData: ProductData[] = [
+export const productAnalysisData: ProductAnalysisRow[] = [
   {
-    billNumber: '16/003949',
-    date: '01-Jan-25',
-    locationId: '142534',
-    locationName: 'ROF-Blackwater Coffee Pvt. Ltd. - POS',
-    city: 'Gurugram',
-    cost: 89.5,
-    brandName: '-',
-    orderType: 'In-Store',
-    billType: 'sale',
-    billingType: 'takeaway',
-    billStatus: 'Settled',
-    areaName: 'Takeaway',
-    platformName: '-',
-    itemId: '830359',
-    itemName: 'Flat White',
-    posCode: '1005',
-    defaultSalesPrice: 199.0,
-    aggregatorSalesPrice: 209.0,
-    category: 'Hot',
-    parentCategory: 'COFFEE',
-    modifierIds: '4,66,46,14,66,493',
-    modifierNames: 'Medium,Toned Milk 3%',
-    itemTotalSalesPrice: 179,
-    itemDiscounts: 0.0,
-    itemCharges: 0,
-    itemTaxes: 8.95,
-    itemTotal: 187.95
+    BILL_NUMBER: '16/003949',
+    DATE: '01-Jan-25',
+    LOCATION_ID: '142534',
+    LOCATION_NAME: 'ROF-Blackwater Coffee Pvt. Ltd. - POS',
+    CITY: 'Gurugram',
+    COST: 89.5,
+    BRAND_NAME: '-',
+    ORDER_TYPE: 'In-Store',
+    BILL_TYPE: 'sale',
+    BILLING_TYPE: 'takeaway',
+    BILL_STATUS: 'Settled',
+    AREA_NAME: 'Takeaway',
+    PLATFORM_NAME: '-',
+    PLATFORM_ID: '-',
+    ITEM_ID: '830359',
+    ITEM_NAME: 'Flat White',
+    POS_CODE: '1005',
+    DEFAULT_SALES_PRICE: 199.0,
+    AGGREGATOR_SALES_PRICE: 209.0
   },
   {
-    billNumber: '16/003950',
-    date: '01-Jan-25',
-    locationId: '142534',
-    locationName: 'ROF-Blackwater Coffee Pvt. Ltd. - POS',
-    city: 'Gurugram',
-    cost: 89.5,
-    brandName: '-',
-    orderType: 'In-Store',
-    billType: 'sale',
-    billingType: 'takeaway',
-    billStatus: 'Settled',
-    areaName: 'Takeaway',
-    platformName: '-',
-    itemId: '830358',
-    itemName: 'Latte',
-    posCode: '1004',
-    defaultSalesPrice: 189.0,
-    aggregatorSalesPrice: 199.0,
-    category: 'Hot',
-    parentCategory: 'COFFEE',
-    modifierIds: '4,66,45,84,66,493',
-    modifierNames: 'Small,Toned Milk 3%',
-    itemTotalSalesPrice: 179,
-    itemDiscounts: 0.0,
-    itemCharges: 0,
-    itemTaxes: 8.95,
-    itemTotal: 187.95
+    BILL_NUMBER: '16/003950',
+    DATE: '01-Jan-25',
+    LOCATION_ID: '142534',
+    LOCATION_NAME: 'ROF-Blackwater Coffee Pvt. Ltd. - POS',
+    CITY: 'Gurugram',
+    COST: 89.5,
+    BRAND_NAME: '-',
+    ORDER_TYPE: 'In-Store',
+    BILL_TYPE: 'sale',
+    BILLING_TYPE: 'takeaway',
+    BILL_STATUS: 'Settled',
+    AREA_NAME: 'Takeaway',
+    PLATFORM_NAME: '-',
+    PLATFORM_ID: '-',
+    ITEM_ID: '830358',
+    ITEM_NAME: 'Latte',
+    POS_CODE: '1004',
+    DEFAULT_SALES_PRICE: 189.0,
+    AGGREGATOR_SALES_PRICE: 199.0
   },
   {
-    billNumber: '16/003951',
-    date: '01-Jan-25',
-    locationId: '142534',
-    locationName: 'ROF-Blackwater Coffee Pvt. Ltd. - POS',
-    city: 'Gurugram',
-    cost: 89.5,
-    brandName: '-',
-    orderType: 'In-Store',
-    billType: 'sale',
-    billingType: 'takeaway',
-    billStatus: 'Settled',
-    areaName: 'Takeaway',
-    platformName: '-',
-    itemId: '830357',
-    itemName: 'Cappuccino',
-    posCode: '1003',
-    defaultSalesPrice: 189.0,
-    aggregatorSalesPrice: 199.0,
-    category: 'Hot',
-    parentCategory: 'COFFEE',
-    modifierIds: '4,66,45,74,66,493',
-    modifierNames: 'Medium,Toned Milk 3%',
-    itemTotalSalesPrice: 179,
-    itemDiscounts: 0.0,
-    itemCharges: 0,
-    itemTaxes: 8.95,
-    itemTotal: 187.95
+    BILL_NUMBER: '16/003951',
+    DATE: '01-Jan-25',
+    LOCATION_ID: '142534',
+    LOCATION_NAME: 'ROF-Blackwater Coffee Pvt. Ltd. - POS',
+    CITY: 'Gurugram',
+    COST: 89.5,
+    BRAND_NAME: '-',
+    ORDER_TYPE: 'In-Store',
+    BILL_TYPE: 'sale',
+    BILLING_TYPE: 'takeaway',
+    BILL_STATUS: 'Settled',
+    AREA_NAME: 'Takeaway',
+    PLATFORM_NAME: '-',
+    PLATFORM_ID: '-',
+    ITEM_ID: '830357',
+    ITEM_NAME: 'Cappuccino',
+    POS_CODE: '1003',
+    DEFAULT_SALES_PRICE: 189.0,
+    AGGREGATOR_SALES_PRICE: 199.0
   }
+];
+
+export const modelCoefficients: ModelCoefficient[] = [
+  { variable: 'Intercept', coefficient: 1.2345, stdError: 0.1234, tValue: 10.0, pValue: 0.000, significance: '***' },
+  { variable: 'log_price', coefficient: -1.2341, stdError: 0.0512, tValue: -24.1, pValue: 0.000, significance: '***' },
+  { variable: 'weekend_yn', coefficient: 0.3449, stdError: 0.0442, tValue: 7.8, pValue: 0.000, significance: '***' },
+  { variable: 'weekend_ind', coefficient: -0.1234, stdError: 0.0234, tValue: -5.3, pValue: 0.000, significance: '***' },
+  { variable: 'promotion_active', coefficient: 0.4562, stdError: 0.0345, tValue: 13.2, pValue: 0.000, significance: '***' }
+];
+
+export const priceRecommendations: PriceRecommendation[] = [
+  { type: 'current', label: 'CURRENT PRICE', value: 393.70, color: 'gray' },
+  { type: 'recommended', label: 'RECOMMENDED PRICE', value: 343.08, color: 'teal' },
+  { type: 'minimum', label: 'MINIMUM VIABLE', value: 275.59, color: 'blue' },
+  { type: 'maximum', label: 'MAXIMUM VIABLE', value: 410.82, color: 'red' },
+  { type: 'optimal', label: 'PROFIT OPTIMAL', value: 343.08, color: 'green' }
 ];

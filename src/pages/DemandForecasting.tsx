@@ -1,1033 +1,895 @@
+import { useState } from 'react';
 import Header from '../components/Header';
-import Card from '../components/Card';
-import Button from '../components/Button';
-import { 
-  TrendingUp, Target, Zap, BarChart3, Sliders, DollarSign, 
-  AlertTriangle, CheckCircle, Users, ShoppingCart, Calendar,
-  Package, Activity, TrendingDown, ArrowUp, ArrowDown, Sparkles,
-  Settings, LineChart as LineChartIcon, Box, Bell
-} from 'lucide-react';
-import { useState, useEffect } from 'react';
-import { LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ComposedChart, Scatter, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
-import { topMoversData } from '../data/mockData';
+import { topMovers } from '../data/mockData';
+import { TrendingUp, TrendingDown, Activity, AlertTriangle, Zap, Target, BarChart3, Calendar, CloudRain, Megaphone, DollarSign, Users, Download, RefreshCw, Sparkles, Info, ChevronDown, ChevronUp, AlertCircle } from 'lucide-react';
+import { LineChart, Line, BarChart, Bar, AreaChart, Area, ComposedChart, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 
-// Demand Curve Component for What-If Analysis
-function DemandCurveChart({ 
-  selectedProduct, 
-  promotionLevel, 
-  priceChangePercent, 
-  marketingIntensity, 
-  seasonalityFactor 
-}: { 
-  selectedProduct: any;
-  promotionLevel: number;
-  priceChangePercent: number;
-  marketingIntensity: number;
-  seasonalityFactor: number;
-}) {
-  // Product-specific parameters
-  const productCost = selectedProduct.productCost;
-  const currentPrice = selectedProduct.currentPrice;
-  const elasticity = selectedProduct.elasticity || selectedProduct.bpe || -1.2;
-  const baseDemand = 100; // Base demand at optimal price point
+interface DemandDataPoint {
+  date: string;
+  actual: number;
+  forecast: number;
+  trend: number;
+  seasonal: number;
+  residual: number;
+  lowerBound: number;
+  upperBound: number;
+  isAnomaly?: boolean;
+}
 
-  // Calculate scenario adjustments (matching What-If Analysis logic)
-  const promotionImpact = (promotionLevel / 100) * 0.3; // 30% boost at max discount
-  const marketingImpact = ((marketingIntensity - 50) / 50) * 0.2; // ±20% at extremes
-  const seasonalImpact = ((seasonalityFactor - 100) / 100) * 0.25; // ±25% at extremes
-  const scenarioMultiplier = 1 + promotionImpact + marketingImpact + seasonalImpact;
-
-  // Generate demand curve data based on product elasticity and scenario factors
-  const demandCurveData = Array.from({ length: 60 }, (_, i) => {
-    const price = Math.max(productCost * 0.5, currentPrice * 0.5 + (i * (currentPrice * 1.5) / 60));
-    
-    // Calculate base demand using elasticity formula
-    const priceRatio = price / currentPrice;
-    const baseDemandAtPrice = baseDemand * Math.pow(priceRatio, elasticity);
-    
-    // Apply scenario adjustments to the demand
-    const adjustedDemand = baseDemandAtPrice * scenarioMultiplier;
-    
-    return { 
-      price: Math.round(price), 
-      demand: Math.max(0, Math.round(adjustedDemand * 10) / 10)
-    };
-  });
-
-  return (
-    <div className="bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl p-6 text-white shadow-lg">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center">
-          <BarChart3 size={20} />
-        </div>
-        <div>
-          <h3 className="font-bold text-lg">Demand Curve - {selectedProduct.name}</h3>
-          <p className="text-sm opacity-90">Real-time curve reflecting your scenario adjustments</p>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-xl p-6">
-        <ResponsiveContainer width="100%" height={350}>
-          <LineChart data={demandCurveData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-            <XAxis 
-              dataKey="price" 
-              stroke="#6b7280"
-              label={{ value: 'Price (₹)', position: 'bottom', offset: 0 }}
-            />
-            <YAxis 
-              stroke="#6b7280"
-              label={{ value: 'Demand (Units/Day)', angle: -90, position: 'insideLeft' }}
-            />
-            <Tooltip 
-              contentStyle={{ 
-                backgroundColor: 'white', 
-                border: '1px solid #e5e7eb',
-                borderRadius: '8px'
-              }}
-            />
-            <Line 
-              type="monotone" 
-              dataKey="demand" 
-              stroke="#3b82f6" 
-              strokeWidth={3}
-            />
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
-    </div>
-  );
+interface ModelAccuracy {
+  name: string;
+  mape: number;
+  rmse: number;
+  accuracy: number;
+  color: string;
 }
 
 export default function DemandForecasting() {
-  const [activeTab, setActiveTab] = useState<'overview' | 'forecast' | 'whatif' | 'drivers'>('overview');
-  
-  // State for Interactive Forecasting
-  const [selectedModel, setSelectedModel] = useState('ensemble');
-  const [timeHorizon, setTimeHorizon] = useState('90');
-  const [granularity, setGranularity] = useState('daily');
-  
-  // State for What-If Analysis
-  const [selectedProduct, setSelectedProduct] = useState(topMoversData[0]);
-  const [promotionLevel, setPromotionLevel] = useState(0);
-  const [priceChangePercent, setPriceChangePercent] = useState(0);
-  const [marketingIntensity, setMarketingIntensity] = useState(50);
-  const [seasonalityFactor, setSeasonalityFactor] = useState(100);
-
-  // Reset product when changing
-  useEffect(() => {
-    setPromotionLevel(0);
-    setPriceChangePercent(0);
-    setMarketingIntensity(50);
-    setSeasonalityFactor(100);
-  }, [selectedProduct]);
-
-  // Model performance metrics
-  const modelMetrics = {
-    ensemble: { accuracy: 96.5, mape: 3.2, rmse: 184, mae: 142, confidence: 97 },
-    prophet: { accuracy: 94.2, mape: 4.8, rmse: 235, mae: 189, confidence: 94 },
-    arima: { accuracy: 91.5, mape: 6.5, rmse: 298, mae: 245, confidence: 89 },
-    lstm: { accuracy: 95.8, mape: 3.9, rmse: 201, mae: 165, confidence: 96 },
-    transformer: { accuracy: 97.2, mape: 2.8, rmse: 168, mae: 128, confidence: 98 }
-  };
-
-  const currentMetrics = modelMetrics[selectedModel as keyof typeof modelMetrics];
-
-  // Generate historical demand data
-  const historicalDemand = Array.from({ length: 12 }, (_, i) => {
-    const month = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][i];
-    const baseValue = 8000 + Math.random() * 2000;
-    return {
-      month,
-      demand: Math.round(baseValue + (i * 150)),
-      actual: Math.round(baseValue + (i * 150) + (Math.random() - 0.5) * 500)
-    };
+  const [selectedProduct, setSelectedProduct] = useState(topMovers[0]);
+  const [timeframe, setTimeframe] = useState<'7d' | '30d' | '90d' | '1y'>('30d');
+  const [forecastModel, setForecastModel] = useState<'arima' | 'prophet' | 'ensemble' | 'deeplearning'>('ensemble');
+  const [showDecomposition, setShowDecomposition] = useState(true);
+  const [showExplainer, setShowExplainer] = useState(true);
+  const [showScenarios, setShowScenarios] = useState(true);
+  const [customScenario, setCustomScenario] = useState({
+    promotionIntensity: 0,
+    priceChange: 0,
+    marketingSpend: 0,
+    competitorPromotion: 0,
+    weatherImpact: 1,
+    holidayEffect: 0
   });
 
-  // Generate forecast data based on model
-  const generateForecastData = (model: string, horizon: string) => {
-    const periods = parseInt(horizon) / 30;
-    const modelMultiplier = model === 'transformer' ? 1.08 : model === 'ensemble' ? 1.05 : model === 'lstm' ? 1.03 : model === 'prophet' ? 1.0 : 0.98;
+  // Generate demand data with decomposition
+  const generateDemandData = (): DemandDataPoint[] => {
+    const data: DemandDataPoint[] = [];
+    const days = timeframe === '7d' ? 14 : timeframe === '30d' ? 60 : timeframe === '90d' ? 180 : 365;
+    const baseDemand = 1200;
     
-    return Array.from({ length: Math.ceil(periods) }, (_, i) => {
-      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      const baseValue = 10000 + (i * 200) * modelMultiplier;
-      return {
-        month: monthNames[i % 12],
-        forecast: Math.round(baseValue),
-        lower: Math.round(baseValue * 0.92),
-        upper: Math.round(baseValue * 1.08),
-        actual: null
-      };
-    });
-  };
-
-  const forecastData = generateForecastData(selectedModel, timeHorizon);
-
-  // What-If Analysis Calculations
-  const baselineDemand = 10000;
-  
-  // Calculate demand impact from various factors
-  const promotionImpact = promotionLevel * 15; // 15 units per % discount
-  const priceImpact = priceChangePercent * -25 * (selectedProduct.elasticity || -1.2); // Elasticity effect
-  const marketingImpact = (marketingIntensity - 50) * 20; // 20 units per intensity point
-  const seasonalImpact = (seasonalityFactor - 100) * 30; // 30 units per % seasonality
-  
-  const scenarioDemand = Math.round(baselineDemand + promotionImpact + priceImpact + marketingImpact + seasonalImpact);
-  const demandChange = scenarioDemand - baselineDemand;
-  const demandChangePercent = ((demandChange / baselineDemand) * 100).toFixed(1);
-
-  // Revenue impact
-  const currentPrice = selectedProduct.currentPrice * (1 + priceChangePercent / 100);
-  const scenarioRevenue = Math.round(scenarioDemand * currentPrice);
-  const baselineRevenue = Math.round(baselineDemand * selectedProduct.currentPrice);
-  const revenueChange = scenarioRevenue - baselineRevenue;
-
-  // Demand drivers data
-  const demandDrivers = [
-    { factor: 'Price', impact: 35, color: '#ef4444' },
-    { factor: 'Seasonality', impact: 25, color: '#3b82f6' },
-    { factor: 'Promotions', impact: 20, color: '#10b981' },
-    { factor: 'Marketing', impact: 12, color: '#f59e0b' },
-    { factor: 'Trends', impact: 8, color: '#8b5cf6' }
-  ];
-
-  // Product volatility data
-  const productVolatility = [
-    { product: 'Latte', volatility: 15, avgDemand: 12500, category: 'Low' },
-    { product: 'Cappuccino', volatility: 22, avgDemand: 10800, category: 'Medium' },
-    { product: 'Flat White', volatility: 18, avgDemand: 8900, category: 'Low' },
-    { product: 'Espresso', volatility: 35, avgDemand: 7200, category: 'High' },
-    { product: 'Americano', volatility: 28, avgDemand: 6500, category: 'High' }
-  ];
-
-  // Inventory recommendations
-  const inventoryData = [
-    { 
-      product: 'Latte', 
-      currentStock: 15000, 
-      optimalStock: 18500, 
-      reorderPoint: 8000,
-      safetyStock: 3500,
-      stockoutRisk: 'Low',
-      daysOfInventory: 45
-    },
-    { 
-      product: 'Cappuccino', 
-      currentStock: 9800, 
-      optimalStock: 14200, 
-      reorderPoint: 6500,
-      safetyStock: 2800,
-      stockoutRisk: 'High',
-      daysOfInventory: 28
-    },
-    { 
-      product: 'Flat White', 
-      currentStock: 11200, 
-      optimalStock: 12000, 
-      reorderPoint: 5200,
-      safetyStock: 2200,
-      stockoutRisk: 'Medium',
-      daysOfInventory: 38
+    for (let i = -Math.floor(days / 2); i <= Math.floor(days / 2); i++) {
+      const date = new Date();
+      date.setDate(date.getDate() + i);
+      
+      // Trend component
+      const trend = baseDemand + (i * 2);
+      
+      // Seasonal component (weekly and monthly patterns)
+      const dayOfWeek = date.getDay();
+      const weekendEffect = (dayOfWeek === 0 || dayOfWeek === 6) ? 150 : -50;
+      const monthlyEffect = Math.sin((i / 30) * Math.PI * 2) * 100;
+      const seasonal = weekendEffect + monthlyEffect;
+      
+      // Residual (random noise)
+      const residual = (Math.random() - 0.5) * 80;
+      
+      // Actual demand
+      const actual = i < 0 ? Math.round(trend + seasonal + residual) : 0;
+      
+      // Forecast with model variations
+      let modelMultiplier = 1;
+      if (forecastModel === 'arima') modelMultiplier = 1 + (Math.random() - 0.5) * 0.05;
+      else if (forecastModel === 'prophet') modelMultiplier = 1 + Math.sin(i / 10) * 0.03;
+      else if (forecastModel === 'deeplearning') modelMultiplier = 1 + (Math.random() - 0.5) * 0.02;
+      else modelMultiplier = 1; // ensemble is most stable
+      
+      const forecast = i >= 0 ? Math.round((trend + seasonal) * modelMultiplier) : 0;
+      
+      // Confidence intervals
+      const uncertainty = Math.abs(i) / days * 0.15;
+      const lowerBound = forecast * (1 - uncertainty);
+      const upperBound = forecast * (1 + uncertainty);
+      
+      // Anomaly detection
+      const isAnomaly = i < 0 && Math.abs(actual - (trend + seasonal)) > 200;
+      
+      data.push({
+        date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        actual,
+        forecast,
+        trend: Math.round(trend),
+        seasonal: Math.round(seasonal),
+        residual: Math.round(residual),
+        lowerBound: Math.round(lowerBound),
+        upperBound: Math.round(upperBound),
+        isAnomaly
+      });
     }
+    return data;
+  };
+
+  const demandData = generateDemandData();
+  const historicalData = demandData.filter(d => d.actual > 0);
+  const forecastData = demandData.filter(d => d.forecast > 0);
+
+  // Model accuracy comparison
+  const modelAccuracies: ModelAccuracy[] = [
+    { name: 'ARIMA', mape: 8.5, rmse: 125, accuracy: 91.5, color: '#3b82f6' },
+    { name: 'Prophet', mape: 7.2, rmse: 105, accuracy: 92.8, color: '#8b5cf6' },
+    { name: 'Ensemble', mape: 5.8, rmse: 85, accuracy: 94.2, color: '#10b981' },
+    { name: 'Deep Learning', mape: 6.5, rmse: 95, accuracy: 93.5, color: '#f59e0b' },
   ];
 
-  // Summary metrics for overview
-  const summaryMetrics = {
-    totalForecast: 248500,
-    yoyGrowth: 18.5,
-    volatilityIndex: 22,
-    accuracyScore: currentMetrics.accuracy,
-    stockoutRisks: 3,
-    overstockItems: 2
+  // Demand drivers analysis
+  const demandDrivers = [
+    { factor: 'Price', impact: 85, trend: 'negative' },
+    { factor: 'Marketing', impact: 72, trend: 'positive' },
+    { factor: 'Season', impact: 68, trend: 'positive' },
+    { factor: 'Competition', impact: 55, trend: 'negative' },
+    { factor: 'Weather', impact: 45, trend: 'neutral' },
+    { factor: 'Promotions', impact: 80, trend: 'positive' },
+  ];
+
+  // Pattern detection
+  const patterns = [
+    { type: 'Peak Period', description: 'Weekends show 40% higher demand', icon: TrendingUp, color: 'text-green-600' },
+    { type: 'Low Season', description: 'Midweek (Tue-Wed) sees 20% lower demand', icon: TrendingDown, color: 'text-red-600' },
+    { type: 'Monthly Cycle', description: 'End-of-month spike of 25%', icon: Calendar, color: 'text-blue-600' },
+    { type: 'Anomaly Detected', description: '3 unusual spikes in past 30 days', icon: AlertTriangle, color: 'text-yellow-600' },
+  ];
+
+  // Calculate custom scenario impact
+  const calculateScenarioImpact = () => {
+    const { promotionIntensity, priceChange, marketingSpend, competitorPromotion, weatherImpact, holidayEffect } = customScenario;
+    
+    const baseDemand = 1200;
+    const elasticity = -1.5;
+    
+    const promoEffect = (promotionIntensity / 100) * 0.4;
+    const priceEffect = elasticity * (priceChange / 100);
+    const marketingEffect = Math.log(1 + marketingSpend / 1000) * 0.12;
+    const competitorEffect = -(competitorPromotion / 100) * 0.25;
+    const weatherEffect = (weatherImpact - 1);
+    const holidayBoost = (holidayEffect / 100) * 0.35;
+    
+    const totalImpact = promoEffect + priceEffect + marketingEffect + competitorEffect + weatherEffect + holidayBoost;
+    const newDemand = baseDemand * (1 + totalImpact);
+    const demandChange = totalImpact * 100;
+    
+    return {
+      newDemand: Math.round(newDemand),
+      demandChange,
+      breakdown: {
+        promotion: promoEffect * 100,
+        price: priceEffect * 100,
+        marketing: marketingEffect * 100,
+        competitor: competitorEffect * 100,
+        weather: weatherEffect * 100,
+        holiday: holidayBoost * 100
+      }
+    };
   };
+
+  const scenarioImpact = calculateScenarioImpact();
+
+  // Risk metrics
+  const volatility = 12.5;
+  const anomalyCount = demandData.filter(d => d.isAnomaly).length;
+  const riskScore = Math.min(100, volatility * 2 + anomalyCount * 5);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header userName="Asif" currentPage="Demand Forecasting" />
-      
+    <div>
+      <Header />
       <div className="p-8">
-        {/* Header Section */}
-        <div className="mb-8 rounded-2xl overflow-hidden bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-600">
-          <div className="p-8">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-2xl bg-white/30 flex items-center justify-center">
-                  <Sparkles size={32} className="text-white" />
-                </div>
-                <div className="text-white">
-                  <h2 className="text-2xl font-bold">AI Demand Forecasting</h2>
-                  <p className="text-sm opacity-90 mt-1">
-                    God-level predictions with multi-model ensemble & scenario planning
-                  </p>
+        {/* Page Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Demand Forecasting</h1>
+          <p className="text-gray-600">AI-powered demand prediction with pattern recognition and scenario analysis</p>
+        </div>
+
+        {/* Control Panel */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-8">
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Product</label>
+            <select 
+              value={selectedProduct.id}
+              onChange={(e) => setSelectedProduct(topMovers.find(p => p.id === e.target.value) || topMovers[0])}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            >
+              {topMovers.map(product => (
+                <option key={product.id} value={product.id}>{product.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Forecast Horizon</label>
+            <select 
+              value={timeframe}
+              onChange={(e) => setTimeframe(e.target.value as any)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            >
+              <option value="7d">7 Days</option>
+              <option value="30d">30 Days</option>
+              <option value="90d">90 Days</option>
+              <option value="1y">1 Year</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">AI Model</label>
+            <select 
+              value={forecastModel}
+              onChange={(e) => setForecastModel(e.target.value as any)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            >
+              <option value="arima">ARIMA/SARIMA</option>
+              <option value="prophet">Prophet</option>
+              <option value="ensemble">ML Ensemble ⭐</option>
+              <option value="deeplearning">Deep Learning</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Actions</label>
+            <div className="flex gap-2">
+              <button className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-colors inline-flex items-center justify-center gap-2">
+                <RefreshCw className="w-4 h-4" />
+                Refresh
+              </button>
+              <button className="flex-1 px-4 py-2 border-2 border-indigo-600 text-indigo-600 rounded-lg font-semibold hover:bg-indigo-50 transition-colors inline-flex items-center justify-center gap-2">
+                <Download className="w-4 h-4" />
+                Export
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Key Metrics */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl p-6 text-white">
+            <div className="flex items-center justify-between mb-4">
+              <Target className="w-10 h-10 opacity-80" />
+              <span className="text-2xl font-bold">{modelAccuracies.find(m => m.name === forecastModel.charAt(0).toUpperCase() + forecastModel.slice(1))?.accuracy || 94.2}%</span>
+            </div>
+            <div className="text-sm opacity-90">Model Accuracy</div>
+            <div className="text-xs opacity-75 mt-1">MAPE: {modelAccuracies.find(m => m.name === forecastModel.charAt(0).toUpperCase() + forecastModel.slice(1))?.mape || 5.8}%</div>
+          </div>
+
+          <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl p-6 text-white">
+            <div className="flex items-center justify-between mb-4">
+              <TrendingUp className="w-10 h-10 opacity-80" />
+              <span className="text-2xl font-bold">+8.5%</span>
+            </div>
+            <div className="text-sm opacity-90">Projected Growth</div>
+            <div className="text-xs opacity-75 mt-1">Next {timeframe === '7d' ? '7 days' : timeframe === '30d' ? '30 days' : timeframe === '90d' ? '90 days' : 'year'}</div>
+          </div>
+
+          <div className="bg-gradient-to-br from-orange-500 to-red-600 rounded-2xl p-6 text-white">
+            <div className="flex items-center justify-between mb-4">
+              <Activity className="w-10 h-10 opacity-80" />
+              <span className="text-2xl font-bold">{volatility}%</span>
+            </div>
+            <div className="text-sm opacity-90">Demand Volatility</div>
+            <div className="text-xs opacity-75 mt-1">Risk Score: {riskScore.toFixed(0)}/100</div>
+          </div>
+
+          <div className="bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl p-6 text-white">
+            <div className="flex items-center justify-between mb-4">
+              <AlertTriangle className="w-10 h-10 opacity-80" />
+              <span className="text-2xl font-bold">{anomalyCount}</span>
+            </div>
+            <div className="text-sm opacity-90">Anomalies Detected</div>
+            <div className="text-xs opacity-75 mt-1">Past {timeframe === '7d' ? '7 days' : '30 days'}</div>
+          </div>
+        </div>
+
+        {/* Main Forecast Chart */}
+        <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-bold text-gray-900">Demand Forecast with Confidence Intervals</h2>
+            <div className="flex items-center gap-4 text-sm">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                <span className="text-gray-600">Historical</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+                <span className="text-gray-600">Forecast</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-0.5 bg-purple-300"></div>
+                <span className="text-gray-600">Confidence Range</span>
+              </div>
+            </div>
+          </div>
+          
+          <ResponsiveContainer width="100%" height={400}>
+            <ComposedChart data={demandData}>
+              <defs>
+                <linearGradient id="confidenceGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0.05}/>
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <XAxis dataKey="date" tick={{ fontSize: 12 }} stroke="#6b7280" />
+              <YAxis tick={{ fontSize: 12 }} stroke="#6b7280" label={{ value: 'Demand Units', angle: -90, position: 'insideLeft' }} />
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: '#fff', 
+                  border: '1px solid #e5e7eb', 
+                  borderRadius: '8px',
+                  boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+                }}
+              />
+              <Legend wrapperStyle={{ paddingTop: '20px' }} />
+              
+              <Area
+                type="monotone"
+                dataKey="upperBound"
+                stroke="none"
+                fill="url(#confidenceGradient)"
+                fillOpacity={1}
+                legendType="none"
+              />
+              <Area
+                type="monotone"
+                dataKey="lowerBound"
+                stroke="none"
+                fill="#fff"
+                fillOpacity={1}
+                legendType="none"
+              />
+              
+              <Line 
+                type="monotone" 
+                dataKey="actual" 
+                stroke="#3b82f6" 
+                strokeWidth={3}
+                dot={(props: any) => {
+                  const point = demandData[props.index];
+                  if (point?.isAnomaly) {
+                    return <circle {...props} r={6} fill="#ef4444" stroke="#fff" strokeWidth={2} />;
+                  }
+                  return null;
+                }}
+                name="Actual Demand"
+              />
+              
+              <Line 
+                type="monotone" 
+                dataKey="forecast" 
+                stroke="#8b5cf6" 
+                strokeWidth={3}
+                strokeDasharray="8 4"
+                dot={false}
+                name="Forecast"
+              />
+            </ComposedChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Pattern Recognition */}
+        <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm mb-8">
+          <h2 className="text-xl font-bold text-gray-900 mb-4">Detected Patterns & Insights</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {patterns.map((pattern, index) => (
+              <div key={index} className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow">
+                <div className="flex items-start gap-3">
+                  <div className={`p-2 rounded-lg bg-gray-50 ${pattern.color}`}>
+                    <pattern.icon className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-gray-900 text-sm mb-1">{pattern.type}</h3>
+                    <p className="text-xs text-gray-600">{pattern.description}</p>
+                  </div>
                 </div>
               </div>
-              <div className="flex gap-3">
-                <div className="bg-white/20 px-4 py-2 rounded-lg text-white text-sm font-medium">
-                  🎯 {summaryMetrics.accuracyScore}% Accurate
+            ))}
+          </div>
+        </div>
+
+        {/* Demand Decomposition */}
+        <div className="mb-8">
+          <button
+            onClick={() => setShowDecomposition(!showDecomposition)}
+            className="w-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-2xl p-6 text-white flex items-center justify-between hover:from-indigo-600 hover:via-purple-600 hover:to-pink-600 transition-all mb-6"
+          >
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+                <BarChart3 className="w-6 h-6" />
+              </div>
+              <div className="text-left">
+                <h2 className="text-xl font-bold mb-1">Demand Decomposition Analysis</h2>
+                <p className="text-sm text-white/80">Break down demand into trend, seasonal, and residual components</p>
+              </div>
+            </div>
+            {showDecomposition ? <ChevronUp className="w-6 h-6" /> : <ChevronDown className="w-6 h-6" />}
+          </button>
+
+          {showDecomposition && (
+            <>
+              {/* Explainer Section */}
+              <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl p-6 mb-6 border border-blue-100">
+                <button
+                  onClick={() => setShowExplainer(!showExplainer)}
+                  className="w-full flex items-start justify-between gap-4 text-left hover:opacity-80 transition-opacity"
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="p-3 bg-white rounded-xl shadow-sm">
+                      <Info className="w-6 h-6 text-blue-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-900 mb-1">Understanding Demand Decomposition</h3>
+                      <p className="text-sm text-gray-600">
+                        {showExplainer ? 'Click to hide explanation' : 'Click to learn what these components mean'}
+                      </p>
+                    </div>
+                  </div>
+                  {showExplainer ? <ChevronUp className="w-5 h-5 text-gray-600 flex-shrink-0 mt-1" /> : <ChevronDown className="w-5 h-5 text-gray-600 flex-shrink-0 mt-1" />}
+                </button>
+                
+                {showExplainer && (
+                  <div className="mt-4">
+                    <p className="text-sm text-gray-700 mb-4">
+                      We break down your historical demand into three key components to help you understand what's driving your sales:
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="bg-white rounded-lg p-4 shadow-sm">
+                        <div className="flex items-center gap-2 mb-2">
+                          <TrendingUp className="w-5 h-5 text-blue-600" />
+                          <span className="font-bold text-blue-900">Trend</span>
+                        </div>
+                        <p className="text-xs text-gray-600">
+                          The long-term direction of your demand. Is your business growing, declining, or staying flat over time?
+                        </p>
+                      </div>
+                      <div className="bg-white rounded-lg p-4 shadow-sm">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Calendar className="w-5 h-5 text-green-600" />
+                          <span className="font-bold text-green-900">Seasonal</span>
+                        </div>
+                        <p className="text-xs text-gray-600">
+                          Predictable patterns that repeat. Think weekends vs weekdays, holidays, or seasonal changes in demand.
+                        </p>
+                      </div>
+                      <div className="bg-white rounded-lg p-4 shadow-sm">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Activity className="w-5 h-5 text-orange-600" />
+                          <span className="font-bold text-orange-900">Noise</span>
+                        </div>
+                        <p className="text-xs text-gray-600">
+                          Random fluctuations that can't be predicted. External events, one-time promotions, or unpredictable factors.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Trend Component */}
+                <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+                  <div className="flex items-center gap-2 mb-2">
+                    <TrendingUp className="w-5 h-5 text-blue-600" />
+                    <h3 className="text-lg font-bold text-gray-900">Trend Component</h3>
+                  </div>
+                  <p className="text-xs text-gray-600 mb-4">Your business's overall growth direction</p>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <AreaChart data={historicalData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                      <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+                      <YAxis tick={{ fontSize: 10 }} />
+                      <Tooltip />
+                      <Area type="monotone" dataKey="trend" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.3} />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                  <div className="mt-3 p-3 bg-blue-50 rounded-lg">
+                    <p className="text-sm font-semibold text-blue-900">Overall upward trend of +8.5% growth</p>
+                    <p className="text-xs text-gray-600 mt-1">This shows your demand is steadily increasing over time</p>
+                  </div>
                 </div>
-                <div className="bg-white/20 px-4 py-2 rounded-lg text-white text-sm font-medium">
-                  📈 {summaryMetrics.totalForecast.toLocaleString()} Units
+
+                {/* Seasonal Component */}
+                <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Calendar className="w-5 h-5 text-green-600" />
+                    <h3 className="text-lg font-bold text-gray-900">Seasonal Component</h3>
+                  </div>
+                  <p className="text-xs text-gray-600 mb-4">Repeating patterns in your demand</p>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <AreaChart data={historicalData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                      <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+                      <YAxis tick={{ fontSize: 10 }} />
+                      <Tooltip />
+                      <Area type="monotone" dataKey="seasonal" stroke="#10b981" fill="#10b981" fillOpacity={0.3} />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                  <div className="mt-3 p-3 bg-green-50 rounded-lg">
+                    <p className="text-sm font-semibold text-green-900">Weekly patterns: Weekend peaks, midweek lows</p>
+                    <p className="text-xs text-gray-600 mt-1">Your demand spikes on weekends and dips midweek</p>
+                  </div>
+                </div>
+
+                {/* Residual Component */}
+                <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Activity className="w-5 h-5 text-orange-600" />
+                    <h3 className="text-lg font-bold text-gray-900">Residual (Noise)</h3>
+                  </div>
+                  <p className="text-xs text-gray-600 mb-4">Unpredictable day-to-day variations</p>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <AreaChart data={historicalData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                      <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+                      <YAxis tick={{ fontSize: 10 }} />
+                      <Tooltip />
+                      <Area type="monotone" dataKey="residual" stroke="#f59e0b" fill="#f59e0b" fillOpacity={0.3} />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                  <div className="mt-3 p-3 bg-orange-50 rounded-lg">
+                    <p className="text-sm font-semibold text-orange-900">Random variation: ±80 units average</p>
+                    <p className="text-xs text-gray-600 mt-1">Normal fluctuations from unexpected events or factors</p>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Model Comparison & Demand Drivers */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          {/* Model Accuracy Comparison */}
+          <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Model Accuracy Comparison</h2>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={modelAccuracies}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                <YAxis tick={{ fontSize: 12 }} />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: '#1f2937', 
+                    border: 'none', 
+                    borderRadius: '8px',
+                    color: '#fff'
+                  }}
+                />
+                <Bar dataKey="accuracy" radius={[8, 8, 0, 0]}>
+                  {modelAccuracies.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+            <div className="mt-4 text-sm text-gray-600">
+              <p className="font-semibold mb-2">Metrics explained:</p>
+              <ul className="space-y-1">
+                <li>• <span className="font-medium">MAPE:</span> Mean Absolute Percentage Error (lower is better)</li>
+                <li>• <span className="font-medium">RMSE:</span> Root Mean Square Error (lower is better)</li>
+                <li>• <span className="font-medium">Accuracy:</span> Overall prediction accuracy</li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Demand Drivers */}
+          <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Top Demand Drivers</h2>
+            <ResponsiveContainer width="100%" height={300}>
+              <RadarChart data={demandDrivers}>
+                <PolarGrid stroke="#e5e7eb" />
+                <PolarAngleAxis dataKey="factor" tick={{ fontSize: 12 }} />
+                <PolarRadiusAxis tick={{ fontSize: 12 }} />
+                <Radar name="Impact Score" dataKey="impact" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.5} />
+                <Tooltip />
+              </RadarChart>
+            </ResponsiveContainer>
+            <div className="mt-4 space-y-2">
+              {demandDrivers.slice(0, 3).map((driver, index) => (
+                <div key={index} className="flex items-center justify-between text-sm">
+                  <span className="text-gray-700">{driver.factor}</span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-24 bg-gray-200 rounded-full h-2">
+                      <div className="bg-purple-600 h-2 rounded-full" style={{ width: `${driver.impact}%` }}></div>
+                    </div>
+                    <span className="font-semibold text-gray-900 w-8">{driver.impact}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* What-If Scenario Builder */}
+        <div className="mb-8">
+          <button
+            onClick={() => setShowScenarios(!showScenarios)}
+            className="w-full bg-gradient-to-r from-blue-500 via-cyan-500 to-teal-500 rounded-2xl p-6 text-white flex items-center justify-between hover:from-blue-600 hover:via-cyan-600 hover:to-teal-600 transition-all mb-6"
+          >
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+                <Zap className="w-6 h-6" />
+              </div>
+              <div className="text-left">
+                <h2 className="text-xl font-bold mb-1">What-If Scenario Builder</h2>
+                <p className="text-sm text-white/80">Simulate various market conditions and their impact on demand</p>
+              </div>
+            </div>
+            {showScenarios ? <ChevronUp className="w-6 h-6" /> : <ChevronDown className="w-6 h-6" />}
+          </button>
+
+          {showScenarios && (
+            <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Scenario Controls */}
+                <div className="space-y-4">
+                  <div>
+                    <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+                      <Megaphone className="w-4 h-4" />
+                      Promotion Intensity (%)
+                    </label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={customScenario.promotionIntensity}
+                      onChange={(e) => setCustomScenario({ ...customScenario, promotionIntensity: parseFloat(e.target.value) })}
+                      className="w-full"
+                    />
+                    <div className="flex justify-between text-sm text-gray-600 mt-1">
+                      <span>0%</span>
+                      <span className="font-bold text-indigo-600">{customScenario.promotionIntensity}%</span>
+                      <span>100%</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+                      <DollarSign className="w-4 h-4" />
+                      Price Change (%)
+                    </label>
+                    <input
+                      type="range"
+                      min="-30"
+                      max="30"
+                      value={customScenario.priceChange}
+                      onChange={(e) => setCustomScenario({ ...customScenario, priceChange: parseFloat(e.target.value) })}
+                      className="w-full"
+                    />
+                    <div className="flex justify-between text-sm text-gray-600 mt-1">
+                      <span>-30%</span>
+                      <span className="font-bold text-indigo-600">{customScenario.priceChange}%</span>
+                      <span>+30%</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+                      <Target className="w-4 h-4" />
+                      Marketing Spend ($)
+                    </label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="5000"
+                      step="100"
+                      value={customScenario.marketingSpend}
+                      onChange={(e) => setCustomScenario({ ...customScenario, marketingSpend: parseFloat(e.target.value) })}
+                      className="w-full"
+                    />
+                    <div className="flex justify-between text-sm text-gray-600 mt-1">
+                      <span>$0</span>
+                      <span className="font-bold text-indigo-600">${customScenario.marketingSpend}</span>
+                      <span>$5,000</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+                      <Users className="w-4 h-4" />
+                      Competitor Promotion (%)
+                    </label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={customScenario.competitorPromotion}
+                      onChange={(e) => setCustomScenario({ ...customScenario, competitorPromotion: parseFloat(e.target.value) })}
+                      className="w-full"
+                    />
+                    <div className="flex justify-between text-sm text-gray-600 mt-1">
+                      <span>0%</span>
+                      <span className="font-bold text-indigo-600">{customScenario.competitorPromotion}%</span>
+                      <span>100%</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+                      <CloudRain className="w-4 h-4" />
+                      Weather Impact
+                    </label>
+                    <input
+                      type="range"
+                      min="0.5"
+                      max="1.5"
+                      step="0.1"
+                      value={customScenario.weatherImpact}
+                      onChange={(e) => setCustomScenario({ ...customScenario, weatherImpact: parseFloat(e.target.value) })}
+                      className="w-full"
+                    />
+                    <div className="flex justify-between text-sm text-gray-600 mt-1">
+                      <span>0.5x (Bad)</span>
+                      <span className="font-bold text-indigo-600">{customScenario.weatherImpact}x</span>
+                      <span>1.5x (Good)</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+                      <Calendar className="w-4 h-4" />
+                      Holiday Effect (%)
+                    </label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={customScenario.holidayEffect}
+                      onChange={(e) => setCustomScenario({ ...customScenario, holidayEffect: parseFloat(e.target.value) })}
+                      className="w-full"
+                    />
+                    <div className="flex justify-between text-sm text-gray-600 mt-1">
+                      <span>0%</span>
+                      <span className="font-bold text-indigo-600">{customScenario.holidayEffect}%</span>
+                      <span>100%</span>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => setCustomScenario({ 
+                      promotionIntensity: 0, 
+                      priceChange: 0, 
+                      marketingSpend: 0, 
+                      competitorPromotion: 0, 
+                      weatherImpact: 1, 
+                      holidayEffect: 0 
+                    })}
+                    className="w-full px-4 py-2 border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition-colors inline-flex items-center justify-center gap-2"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                    Reset Scenario
+                  </button>
+                </div>
+
+                {/* Results */}
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900 mb-4">Scenario Impact Analysis</h3>
+                  
+                  {/* Overall Impact */}
+                  <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-6 mb-6">
+                    <div className="text-center">
+                      <div className="text-4xl font-bold text-gray-900 mb-2">{scenarioImpact.newDemand}</div>
+                      <div className="text-sm text-gray-600 mb-1">Projected Demand (units)</div>
+                      <div className={`text-lg font-bold ${scenarioImpact.demandChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {scenarioImpact.demandChange >= 0 ? '+' : ''}{scenarioImpact.demandChange.toFixed(1)}%
+                      </div>
+                      <div className="text-xs text-gray-500">vs baseline (1,200 units)</div>
+                    </div>
+                  </div>
+
+                  {/* Impact Breakdown */}
+                  <div className="space-y-3">
+                    <h4 className="font-semibold text-gray-900 text-sm mb-2">Factor Breakdown:</h4>
+                    {Object.entries(scenarioImpact.breakdown).map(([key, value]) => (
+                      <div key={key} className="flex items-center justify-between">
+                        <span className="text-sm text-gray-700 capitalize">{key}</span>
+                        <div className="flex items-center gap-2">
+                          <div className="w-32 bg-gray-200 rounded-full h-2">
+                            <div 
+                              className={`h-2 rounded-full ${value >= 0 ? 'bg-green-500' : 'bg-red-500'}`}
+                              style={{ width: `${Math.min(Math.abs(value), 100)}%` }}
+                            ></div>
+                          </div>
+                          <span className={`text-sm font-semibold w-16 text-right ${value >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {value >= 0 ? '+' : ''}{value.toFixed(1)}%
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Insights */}
+                  <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="flex items-start gap-2">
+                      <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <div className="font-semibold text-blue-900 text-sm mb-1">AI Insights</div>
+                        <p className="text-xs text-blue-700">
+                          {scenarioImpact.demandChange > 20 
+                            ? "Strong demand surge predicted. Consider increasing inventory and staffing levels."
+                            : scenarioImpact.demandChange < -20
+                            ? "Significant demand drop expected. Reduce inventory and consider promotional activities."
+                            : "Moderate demand change. Current inventory levels should be sufficient."}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Anomaly & Risk Dashboard */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Anomaly Detection Timeline</h2>
+            <ResponsiveContainer width="100%" height={250}>
+              <LineChart data={historicalData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+                <YAxis tick={{ fontSize: 11 }} />
+                <Tooltip />
+                <Line 
+                  type="monotone" 
+                  dataKey="actual" 
+                  stroke="#3b82f6" 
+                  strokeWidth={2}
+                  dot={(props: any) => {
+                    const point = historicalData[props.index];
+                    if (point?.isAnomaly) {
+                      return <circle {...props} r={8} fill="#ef4444" stroke="#fff" strokeWidth={2} />;
+                    }
+                    return <circle {...props} r={3} fill="#3b82f6" />;
+                  }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+            <div className="mt-4 flex items-start gap-2 text-sm text-gray-600">
+              <AlertCircle className="w-4 h-4 text-red-500 mt-0.5" />
+              <p>Red dots indicate detected anomalies where demand deviated significantly from expected patterns.</p>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Risk Assessment</h2>
+            <div className="space-y-4">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-semibold text-gray-700">Overall Risk</span>
+                  <span className={`text-lg font-bold ${riskScore < 30 ? 'text-green-600' : riskScore < 60 ? 'text-yellow-600' : 'text-red-600'}`}>
+                    {riskScore.toFixed(0)}/100
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-3">
+                  <div 
+                    className={`h-3 rounded-full ${riskScore < 30 ? 'bg-green-500' : riskScore < 60 ? 'bg-yellow-500' : 'bg-red-500'}`}
+                    style={{ width: `${riskScore}%` }}
+                  ></div>
+                </div>
+              </div>
+
+              <div className="space-y-3 pt-4">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-700">Volatility</span>
+                  <span className="font-semibold text-yellow-600">{volatility}%</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-700">Anomalies</span>
+                  <span className="font-semibold text-red-600">{anomalyCount}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-700">Confidence Level</span>
+                  <span className="font-semibold text-green-600">85%</span>
+                </div>
+              </div>
+
+              <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 text-yellow-600 flex-shrink-0 mt-0.5" />
+                  <p className="text-xs text-yellow-700">
+                    {riskScore < 30 
+                      ? "Low risk. Demand is stable and predictable."
+                      : riskScore < 60
+                      ? "Moderate risk. Monitor closely for changes."
+                      : "High risk. Demand is volatile. Consider safety stock."}
+                  </p>
                 </div>
               </div>
             </div>
           </div>
         </div>
-
-        {/* Tab Navigation */}
-        <div className="flex gap-3 mb-8 bg-white p-2 rounded-xl shadow-sm overflow-x-auto">
-          <button
-            onClick={() => setActiveTab('overview')}
-            className={`flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-medium transition-all whitespace-nowrap ${
-              activeTab === 'overview'
-                ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-lg'
-                : 'text-gray-600 hover:bg-gray-100'
-            }`}
-          >
-            <BarChart3 size={20} />
-            Overview
-          </button>
-          <button
-            onClick={() => setActiveTab('forecast')}
-            className={`flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-medium transition-all whitespace-nowrap ${
-              activeTab === 'forecast'
-                ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-lg'
-                : 'text-gray-600 hover:bg-gray-100'
-            }`}
-          >
-            <TrendingUp size={20} />
-            Interactive Forecast
-          </button>
-          <button
-            onClick={() => setActiveTab('whatif')}
-            className={`flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-medium transition-all whitespace-nowrap ${
-              activeTab === 'whatif'
-                ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-lg'
-                : 'text-gray-600 hover:bg-gray-100'
-            }`}
-          >
-            <Sliders size={20} />
-            What-If Analysis
-          </button>
-          <button
-            onClick={() => setActiveTab('drivers')}
-            className={`flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-medium transition-all whitespace-nowrap ${
-              activeTab === 'drivers'
-                ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-lg'
-                : 'text-gray-600 hover:bg-gray-100'
-            }`}
-          >
-            <Activity size={20} />
-            Demand Drivers
-          </button>
-        </div>
-
-        {/* Overview Tab */}
-        {activeTab === 'overview' && (
-          <>
-            {/* Summary Metrics */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              <Card className="bg-gradient-to-br from-cyan-500 to-blue-600 text-white shadow-lg">
-                <div className="p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <TrendingUp size={24} />
-                    <span className="text-xs opacity-75 bg-white/20 px-2 py-1 rounded">Next 30 Days</span>
-                  </div>
-                  <div className="text-sm opacity-90 mb-2">Total Forecast</div>
-                  <div className="text-3xl font-bold">{summaryMetrics.totalForecast.toLocaleString()}</div>
-                  <div className="text-xs opacity-75 mt-2">+{summaryMetrics.yoyGrowth}% YoY</div>
-                </div>
-              </Card>
-
-              <Card className="bg-gradient-to-br from-green-500 to-emerald-600 text-white shadow-lg">
-                <div className="p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <Target size={24} />
-                    <span className="text-xs opacity-75 bg-white/20 px-2 py-1 rounded">Model Score</span>
-                  </div>
-                  <div className="text-sm opacity-90 mb-2">Forecast Accuracy</div>
-                  <div className="text-3xl font-bold">{summaryMetrics.accuracyScore}%</div>
-                  <div className="text-xs opacity-75 mt-2">MAPE: {currentMetrics.mape}%</div>
-                </div>
-              </Card>
-
-              <Card className="bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-lg">
-                <div className="p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <Activity size={24} />
-                    <span className="text-xs opacity-75 bg-white/20 px-2 py-1 rounded">Volatility</span>
-                  </div>
-                  <div className="text-sm opacity-90 mb-2">Demand Volatility</div>
-                  <div className="text-3xl font-bold">{summaryMetrics.volatilityIndex}%</div>
-                  <div className="text-xs opacity-75 mt-2">Medium Risk</div>
-                </div>
-              </Card>
-
-              <Card className="bg-gradient-to-br from-red-500 to-pink-600 text-white shadow-lg">
-                <div className="p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <AlertTriangle size={24} />
-                    <span className="text-xs opacity-75 bg-white/20 px-2 py-1 rounded">Alerts</span>
-                  </div>
-                  <div className="text-sm opacity-90 mb-2">Stock Risks</div>
-                  <div className="text-3xl font-bold">{summaryMetrics.stockoutRisks}</div>
-                  <div className="text-xs opacity-75 mt-2">Requires attention</div>
-                </div>
-              </Card>
-            </div>
-
-            {/* Demand Trend Chart */}
-            <Card 
-              className="shadow-sm mb-8"
-              gradient="bg-gradient-to-r from-cyan-500 to-blue-600"
-              title="Demand Trend Analysis"
-              badge="Last 12 Months + Forecast"
-              icon={<LineChartIcon size={24} />}
-            >
-              <div className="p-6">
-                <ResponsiveContainer width="100%" height={400}>
-                  <ComposedChart data={[...historicalDemand, ...forecastData.slice(0, 6)]}>
-                    <defs>
-                      <linearGradient id="colorDemand" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="#06b6d4" stopOpacity={0}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                    <XAxis dataKey="month" stroke="#6b7280" />
-                    <YAxis stroke="#6b7280" />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: 'white', 
-                        border: '1px solid #e5e7eb',
-                        borderRadius: '8px'
-                      }}
-                    />
-                    <Legend />
-                    <Area 
-                      type="monotone" 
-                      dataKey="upper" 
-                      stroke="none" 
-                      fill="#bae6fd" 
-                      fillOpacity={0.3}
-                      name="Confidence Range"
-                    />
-                    <Area 
-                      type="monotone" 
-                      dataKey="lower" 
-                      stroke="none" 
-                      fill="#bae6fd" 
-                      fillOpacity={0.3}
-                    />
-                    <Line 
-                      type="monotone" 
-                      dataKey="actual" 
-                      stroke="#06b6d4" 
-                      strokeWidth={3}
-                      name="Actual Demand"
-                      dot={{ fill: '#06b6d4', r: 4 }}
-                    />
-                    <Line 
-                      type="monotone" 
-                      dataKey="forecast" 
-                      stroke="#10b981" 
-                      strokeWidth={3}
-                      strokeDasharray="5 5"
-                      name="Forecasted Demand"
-                      dot={{ fill: '#10b981', r: 4 }}
-                    />
-                  </ComposedChart>
-                </ResponsiveContainer>
-              </div>
-            </Card>
-
-            {/* Quick Insights Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card className="bg-white shadow-sm">
-                <div className="p-6">
-                  <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
-                    <Bell size={20} className="text-cyan-600" />
-                    Smart Alerts
-                  </h3>
-                  <div className="space-y-3">
-                    <div className="bg-red-50 border-l-4 border-red-500 p-3 rounded">
-                      <div className="flex items-start gap-2">
-                        <AlertTriangle size={16} className="text-red-600 mt-0.5" />
-                        <div>
-                          <div className="font-semibold text-red-800 text-sm">High Stockout Risk</div>
-                          <div className="text-xs text-red-700 mt-1">Cappuccino expected to run out in 8 days</div>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="bg-amber-50 border-l-4 border-amber-500 p-3 rounded">
-                      <div className="flex items-start gap-2">
-                        <TrendingUp size={16} className="text-amber-600 mt-0.5" />
-                        <div>
-                          <div className="font-semibold text-amber-800 text-sm">Demand Spike Expected</div>
-                          <div className="text-xs text-amber-700 mt-1">Latte demand to increase 35% next week</div>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="bg-green-50 border-l-4 border-green-500 p-3 rounded">
-                      <div className="flex items-start gap-2">
-                        <CheckCircle size={16} className="text-green-600 mt-0.5" />
-                        <div>
-                          <div className="font-semibold text-green-800 text-sm">Optimal Stock Levels</div>
-                          <div className="text-xs text-green-700 mt-1">Flat White inventory perfectly balanced</div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </Card>
-
-              <Card className="bg-white shadow-sm">
-                <div className="p-6">
-                  <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
-                    <Zap size={20} className="text-cyan-600" />
-                    Top Demand Drivers
-                  </h3>
-                  <div className="space-y-4">
-                    {demandDrivers.map((driver, index) => (
-                      <div key={index}>
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="text-sm font-medium text-gray-700">{driver.factor}</span>
-                          <span className="text-sm font-bold text-gray-800">{driver.impact}%</span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div 
-                            className="h-2 rounded-full transition-all duration-500"
-                            style={{ 
-                              width: `${driver.impact}%`,
-                              backgroundColor: driver.color
-                            }}
-                          ></div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </Card>
-            </div>
-          </>
-        )}
-
-        {/* Interactive Forecast Tab */}
-        {activeTab === 'forecast' && (
-          <>
-            {/* Configuration Panel */}
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
-              <Card className="bg-white shadow-sm">
-                <div className="p-6">
-                  <div className="flex items-center gap-2 text-cyan-600 mb-4">
-                    <Settings size={20} />
-                    <h3 className="font-bold">Model Selection</h3>
-                  </div>
-                  <select 
-                    value={selectedModel}
-                    onChange={(e) => setSelectedModel(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                  >
-                    <option value="ensemble">Ensemble (Best)</option>
-                    <option value="transformer">Transformer</option>
-                    <option value="lstm">LSTM Neural Net</option>
-                    <option value="prophet">Prophet</option>
-                    <option value="arima">ARIMA</option>
-                  </select>
-                </div>
-              </Card>
-
-              <Card className="bg-white shadow-sm">
-                <div className="p-6">
-                  <div className="flex items-center gap-2 text-blue-600 mb-4">
-                    <Calendar size={20} />
-                    <h3 className="font-bold">Time Horizon</h3>
-                  </div>
-                  <select 
-                    value={timeHorizon}
-                    onChange={(e) => setTimeHorizon(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="7">7 Days</option>
-                    <option value="30">30 Days</option>
-                    <option value="90">90 Days</option>
-                    <option value="180">6 Months</option>
-                    <option value="365">1 Year</option>
-                  </select>
-                </div>
-              </Card>
-
-              <Card className="bg-gradient-to-br from-green-500 to-emerald-600 text-white shadow-sm">
-                <div className="p-6">
-                  <div className="text-sm opacity-90 mb-2">Model Accuracy</div>
-                  <div className="text-3xl font-bold">{currentMetrics.accuracy}%</div>
-                  <div className="text-xs opacity-90 mt-1">Confidence: {currentMetrics.confidence}%</div>
-                </div>
-              </Card>
-
-              <Card className="bg-gradient-to-br from-blue-500 to-cyan-600 text-white shadow-sm">
-                <div className="p-6">
-                  <div className="text-sm opacity-90 mb-2">MAPE Score</div>
-                  <div className="text-3xl font-bold">{currentMetrics.mape}%</div>
-                  <div className="text-xs opacity-90 mt-1">Lower is better</div>
-                </div>
-              </Card>
-            </div>
-
-            {/* Forecast Visualization */}
-            <Card 
-              className="shadow-sm mb-8"
-              gradient="bg-gradient-to-r from-blue-500 to-purple-600"
-              title="Demand Forecast"
-              badge={`${timeHorizon} Day Forecast - ${selectedModel.toUpperCase()}`}
-              icon={<TrendingUp size={24} />}
-            >
-              <div className="p-6">
-                <ResponsiveContainer width="100%" height={400}>
-                  <AreaChart data={forecastData}>
-                    <defs>
-                      <linearGradient id="colorForecast2" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                    <XAxis dataKey="month" stroke="#6b7280" />
-                    <YAxis stroke="#6b7280" />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: 'white', 
-                        border: '1px solid #e5e7eb',
-                        borderRadius: '8px'
-                      }}
-                    />
-                    <Legend />
-                    <Area 
-                      type="monotone" 
-                      dataKey="upper" 
-                      stroke="none" 
-                      fill="#bfdbfe" 
-                      fillOpacity={0.3}
-                      name="Upper Bound"
-                    />
-                    <Area 
-                      type="monotone" 
-                      dataKey="lower" 
-                      stroke="none" 
-                      fill="#bfdbfe" 
-                      fillOpacity={0.3}
-                      name="Lower Bound"
-                    />
-                    <Area 
-                      type="monotone" 
-                      dataKey="forecast" 
-                      stroke="#3b82f6" 
-                      strokeWidth={3}
-                      fill="url(#colorForecast2)"
-                      name="Forecasted Demand"
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            </Card>
-
-            {/* Model Metrics Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <Card className="bg-white shadow-sm">
-                <div className="p-6">
-                  <div className="text-sm text-gray-600 mb-2">RMSE</div>
-                  <div className="text-3xl font-bold text-blue-600">{currentMetrics.rmse}</div>
-                  <div className="text-xs text-gray-500 mt-2">Root Mean Square Error</div>
-                </div>
-              </Card>
-              <Card className="bg-white shadow-sm">
-                <div className="p-6">
-                  <div className="text-sm text-gray-600 mb-2">MAE</div>
-                  <div className="text-3xl font-bold text-purple-600">{currentMetrics.mae}</div>
-                  <div className="text-xs text-gray-500 mt-2">Mean Absolute Error</div>
-                </div>
-              </Card>
-              <Card className="bg-white shadow-sm">
-                <div className="p-6">
-                  <div className="text-sm text-gray-600 mb-2">MAPE</div>
-                  <div className="text-3xl font-bold text-green-600">{currentMetrics.mape}%</div>
-                  <div className="text-xs text-gray-500 mt-2">Mean Absolute % Error</div>
-                </div>
-              </Card>
-              <Card className="bg-white shadow-sm">
-                <div className="p-6">
-                  <div className="text-sm text-gray-600 mb-2">Confidence</div>
-                  <div className="text-3xl font-bold text-cyan-600">{currentMetrics.confidence}%</div>
-                  <div className="text-xs text-gray-500 mt-2">Model Confidence Score</div>
-                </div>
-              </Card>
-            </div>
-          </>
-        )}
-
-        {/* What-If Analysis Tab */}
-        {activeTab === 'whatif' && (
-          <>
-            {/* Product Selector */}
-            <Card className="bg-white shadow-sm mb-8">
-              <div className="p-6">
-                <h3 className="font-bold text-gray-800 mb-4">Select Product for Scenario Analysis</h3>
-                <select 
-                  value={selectedProduct.id}
-                  onChange={(e) => {
-                    const product = topMoversData.find(p => p.id === e.target.value);
-                    if (product) setSelectedProduct(product);
-                  }}
-                  className="w-full px-6 py-3 border-2 border-cyan-300 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                >
-                  {topMoversData.map(product => (
-                    <option key={product.id} value={product.id}>{product.name}</option>
-                  ))}
-                </select>
-              </div>
-            </Card>
-
-            {/* Scenario Controls */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-              <div className="lg:col-span-2">
-                <Card 
-                  className="shadow-lg"
-                  gradient="bg-gradient-to-r from-cyan-600 to-blue-600"
-                  title="Demand Scenario Simulator"
-                  icon={<Sliders size={24} />}
-                >
-                  <div className="p-8">
-                    {/* Promotion Level Slider */}
-                    <div className="mb-8">
-                      <div className="flex items-center justify-between mb-4">
-                        <label className="text-sm font-semibold text-gray-700">Promotion Discount Level</label>
-                        <div className="text-2xl font-bold text-cyan-600">{promotionLevel}%</div>
-                      </div>
-                      <input
-                        type="range"
-                        min={0}
-                        max={50}
-                        step={5}
-                        value={promotionLevel}
-                        onChange={(e) => setPromotionLevel(Number(e.target.value))}
-                        className="w-full h-3 bg-gradient-to-r from-gray-300 to-green-400 rounded-lg appearance-none cursor-pointer"
-                      />
-                      <div className="flex justify-between text-xs text-gray-500 mt-2">
-                        <span>No Discount</span>
-                        <span>25% Off</span>
-                        <span>50% Off</span>
-                      </div>
-                    </div>
-
-                    {/* Price Change Slider */}
-                    <div className="mb-8">
-                      <div className="flex items-center justify-between mb-4">
-                        <label className="text-sm font-semibold text-gray-700">Price Change</label>
-                        <div className="text-2xl font-bold text-cyan-600">{priceChangePercent > 0 ? '+' : ''}{priceChangePercent}%</div>
-                      </div>
-                      <input
-                        type="range"
-                        min={-30}
-                        max={30}
-                        step={5}
-                        value={priceChangePercent}
-                        onChange={(e) => setPriceChangePercent(Number(e.target.value))}
-                        className="w-full h-3 bg-gradient-to-r from-red-300 via-gray-300 to-green-300 rounded-lg appearance-none cursor-pointer"
-                      />
-                      <div className="flex justify-between text-xs text-gray-500 mt-2">
-                        <span>-30%</span>
-                        <span>No Change</span>
-                        <span>+30%</span>
-                      </div>
-                    </div>
-
-                    {/* Marketing Intensity Slider */}
-                    <div className="mb-8">
-                      <div className="flex items-center justify-between mb-4">
-                        <label className="text-sm font-semibold text-gray-700">Marketing Campaign Intensity</label>
-                        <div className="text-2xl font-bold text-cyan-600">{marketingIntensity}%</div>
-                      </div>
-                      <input
-                        type="range"
-                        min={0}
-                        max={100}
-                        step={10}
-                        value={marketingIntensity}
-                        onChange={(e) => setMarketingIntensity(Number(e.target.value))}
-                        className="w-full h-3 bg-gradient-to-r from-blue-300 to-purple-400 rounded-lg appearance-none cursor-pointer"
-                      />
-                      <div className="flex justify-between text-xs text-gray-500 mt-2">
-                        <span>Low</span>
-                        <span>Medium</span>
-                        <span>High</span>
-                      </div>
-                    </div>
-
-                    {/* Seasonality Factor Slider */}
-                    <div className="mb-8">
-                      <div className="flex items-center justify-between mb-4">
-                        <label className="text-sm font-semibold text-gray-700">Seasonal Adjustment Factor</label>
-                        <div className="text-2xl font-bold text-cyan-600">{seasonalityFactor}%</div>
-                      </div>
-                      <input
-                        type="range"
-                        min={50}
-                        max={150}
-                        step={10}
-                        value={seasonalityFactor}
-                        onChange={(e) => setSeasonalityFactor(Number(e.target.value))}
-                        className="w-full h-3 bg-gradient-to-r from-blue-300 to-orange-400 rounded-lg appearance-none cursor-pointer"
-                      />
-                      <div className="flex justify-between text-xs text-gray-500 mt-2">
-                        <span>Off-Season</span>
-                        <span>Normal</span>
-                        <span>Peak Season</span>
-                      </div>
-                    </div>
-
-                    {/* Live Impact Metrics */}
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl p-6 text-white">
-                        <div className="text-sm opacity-90 mb-2">Predicted Demand</div>
-                        <div className="text-2xl font-bold">{scenarioDemand.toLocaleString()}</div>
-                        <div className="text-xs opacity-75 mt-2">
-                          {demandChange > 0 ? '↑' : '↓'} {Math.abs(parseFloat(demandChangePercent))}% vs baseline
-                        </div>
-                      </div>
-                      <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl p-6 text-white">
-                        <div className="text-sm opacity-90 mb-2">Projected Revenue</div>
-                        <div className="text-2xl font-bold">₹{scenarioRevenue.toLocaleString()}</div>
-                        <div className="text-xs opacity-75 mt-2">
-                          {revenueChange > 0 ? '↑' : '↓'} ₹{Math.abs(revenueChange).toLocaleString()}
-                        </div>
-                      </div>
-                      <div className="bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl p-6 text-white">
-                        <div className="text-sm opacity-90 mb-2">ROI Estimate</div>
-                        <div className="text-2xl font-bold">
-                          {((revenueChange / (baselineRevenue * 0.1)) * 100).toFixed(0)}%
-                        </div>
-                        <div className="text-xs opacity-75 mt-2">Based on 10% campaign cost</div>
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-              </div>
-
-              {/* AI Insights Panel */}
-              <div className="space-y-6">
-                <Card className="bg-white shadow-sm">
-                  <div className="p-6">
-                    <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
-                      <Sparkles size={20} className="text-cyan-600" />
-                      AI Insights
-                    </h3>
-                    <div className="space-y-4">
-                      {promotionLevel > 30 && (
-                        <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded">
-                          <div className="flex items-start gap-2">
-                            <AlertTriangle size={18} className="text-amber-600 mt-0.5" />
-                            <div>
-                              <div className="font-semibold text-amber-800 text-sm">High Discount Alert</div>
-                              <div className="text-xs text-amber-700 mt-1">
-                                {promotionLevel}% discount may erode profit margins significantly
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {demandChange > 2000 && (
-                        <div className="bg-green-50 border-l-4 border-green-500 p-4 rounded">
-                          <div className="flex items-start gap-2">
-                            <CheckCircle size={18} className="text-green-600 mt-0.5" />
-                            <div>
-                              <div className="font-semibold text-green-800 text-sm">Strong Demand Growth</div>
-                              <div className="text-xs text-green-700 mt-1">
-                                Scenario shows {Math.abs(parseFloat(demandChangePercent))}% demand increase. Ensure inventory capacity.
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {marketingIntensity > 70 && (
-                        <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
-                          <div className="flex items-start gap-2">
-                            <TrendingUp size={18} className="text-blue-600 mt-0.5" />
-                            <div>
-                              <div className="font-semibold text-blue-800 text-sm">High Marketing Impact</div>
-                              <div className="text-xs text-blue-700 mt-1">
-                                Aggressive marketing at {marketingIntensity}% intensity will significantly boost awareness
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {priceChangePercent < -15 && (
-                        <div className="bg-purple-50 border-l-4 border-purple-500 p-4 rounded">
-                          <div className="flex items-start gap-2">
-                            <DollarSign size={18} className="text-purple-600 mt-0.5" />
-                            <div>
-                              <div className="font-semibold text-purple-800 text-sm">Price Sensitivity</div>
-                              <div className="text-xs text-purple-700 mt-1">
-                                {Math.abs(priceChangePercent)}% price reduction triggers strong elasticity response
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </Card>
-
-                <Card className="bg-gradient-to-br from-cyan-500 to-blue-600 text-white shadow-lg">
-                  <div className="p-6">
-                    <h3 className="font-bold mb-4">Scenario Summary</h3>
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm opacity-90">Baseline Demand</span>
-                        <span className="font-bold">{baselineDemand.toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm opacity-90">Scenario Demand</span>
-                        <span className="font-bold">{scenarioDemand.toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm opacity-90">Net Change</span>
-                        <span className="font-bold">{demandChange > 0 ? '+' : ''}{demandChange.toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm opacity-90">Change %</span>
-                        <span className="font-bold">{demandChange > 0 ? '+' : ''}{demandChangePercent}%</span>
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-
-                <Button variant="success" className="w-full">
-                  <CheckCircle size={20} />
-                  Apply This Scenario
-                </Button>
-              </div>
-            </div>
-
-            {/* Demand Curve Chart */}
-            <DemandCurveChart 
-              selectedProduct={selectedProduct}
-              promotionLevel={promotionLevel}
-              priceChangePercent={priceChangePercent}
-              marketingIntensity={marketingIntensity}
-              seasonalityFactor={seasonalityFactor}
-            />
-          </>
-        )}
-
-        {/* Demand Drivers Tab */}
-        {activeTab === 'drivers' && (
-          <>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-              {/* Factor Importance Chart */}
-              <Card 
-                className="shadow-sm"
-                gradient="bg-gradient-to-r from-purple-500 to-pink-600"
-                title="Demand Driver Impact"
-                badge="Factor Importance"
-                icon={<Activity size={24} />}
-              >
-                <div className="p-6">
-                  <ResponsiveContainer width="100%" height={350}>
-                    <BarChart data={demandDrivers} layout="vertical">
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                      <XAxis type="number" stroke="#6b7280" />
-                      <YAxis dataKey="factor" type="category" stroke="#6b7280" width={100} />
-                      <Tooltip 
-                        contentStyle={{ 
-                          backgroundColor: 'white', 
-                          border: '1px solid #e5e7eb',
-                          borderRadius: '8px'
-                        }}
-                      />
-                      <Bar dataKey="impact" fill="#8b5cf6" radius={[0, 8, 8, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </Card>
-
-              {/* Product Volatility Analysis */}
-              <Card 
-                className="shadow-sm"
-                gradient="bg-gradient-to-r from-orange-500 to-red-600"
-                title="Product Volatility Matrix"
-                badge="Risk Assessment"
-                icon={<AlertTriangle size={24} />}
-              >
-                <div className="p-6">
-                  <div className="space-y-4">
-                    {productVolatility.map((product, index) => (
-                      <div key={index} className="bg-white rounded-lg p-4 border-2 border-gray-200">
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="font-semibold text-gray-800">{product.product}</span>
-                          <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                            product.category === 'High' ? 'bg-red-100 text-red-700' :
-                            product.category === 'Medium' ? 'bg-amber-100 text-amber-700' :
-                            'bg-green-100 text-green-700'
-                          }`}>
-                            {product.category} Risk
-                          </span>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div>
-                            <div className="text-gray-600 text-xs">Volatility</div>
-                            <div className="font-bold text-gray-800">{product.volatility}%</div>
-                          </div>
-                          <div>
-                            <div className="text-gray-600 text-xs">Avg Demand</div>
-                            <div className="font-bold text-gray-800">{product.avgDemand.toLocaleString()}</div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </Card>
-            </div>
-
-            {/* Detailed Driver Analysis */}
-            <Card className="bg-white shadow-sm">
-              <div className="p-6">
-                <h3 className="font-bold text-gray-800 mb-6">Detailed Factor Analysis</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {demandDrivers.slice(0, 3).map((driver, index) => (
-                    <div key={index} className="border-2 border-gray-200 rounded-xl p-6">
-                      <div className="flex items-center justify-between mb-4">
-                        <h4 className="font-bold text-gray-800">{driver.factor}</h4>
-                        <div className="text-3xl font-bold" style={{ color: driver.color }}>
-                          {driver.impact}%
-                        </div>
-                      </div>
-                      <p className="text-sm text-gray-600 mb-4">
-                        {driver.factor === 'Price' && 'Price elasticity shows strong negative correlation with demand. Lower prices significantly boost volume.'}
-                        {driver.factor === 'Seasonality' && 'Seasonal patterns show 40% higher demand in December and 25% lower in February.'}
-                        {driver.factor === 'Promotions' && 'Promotional campaigns average 18-25% demand lift during active periods.'}
-                      </p>
-                      <div className="w-full bg-gray-200 rounded-full h-3">
-                        <div 
-                          className="h-3 rounded-full"
-                          style={{ 
-                            width: `${driver.impact}%`,
-                            backgroundColor: driver.color
-                          }}
-                        ></div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </Card>
-          </>
-        )}
-
       </div>
     </div>
   );

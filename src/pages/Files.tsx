@@ -1,186 +1,164 @@
 import { useState } from 'react';
-import { Search, Filter, Download, ChevronLeft, ChevronRight } from 'lucide-react';
 import Header from '../components/Header';
-import Card from '../components/Card';
-import { sampleProductData } from '../data/mockData';
-import { Link } from 'react-router-dom';
+import { productAnalysisData } from '../data/mockData';
+import { FileText, ExternalLink, Search } from 'lucide-react';
 
 export default function Files() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const [entriesPerPage, setEntriesPerPage] = useState(10);
 
-  const filteredData = sampleProductData.filter(item =>
-    item.productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.sku.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentData = filteredData.slice(startIndex, endIndex);
+  const columns = Object.keys(productAnalysisData[0] || {});
 
   return (
-    <div>
-      <Header 
-        title="Product Analytics" 
-        subtitle="Comprehensive view of all products and their performance" 
-      />
-
-      <Card>
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <input
-                type="text"
-                placeholder="Search products..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent w-80"
-              />
+    <div className="min-h-screen bg-gray-50">
+      <Header title="Dashboard" />
+      
+      <div className="p-8">
+        {/* Header Section */}
+        <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl p-8 mb-6 text-white">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="bg-white/20 rounded-2xl p-4">
+                <FileText size={32} />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold mb-2">Product Analysis</h1>
+                <p className="text-sm opacity-90">Comprehensive overview of your product data</p>
+              </div>
             </div>
-            <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
-              <Filter className="w-4 h-4" />
-              Filters
-            </button>
+            <div className="bg-white/20 rounded-lg px-4 py-2">
+              <span className="text-sm font-semibold">📦 10 Products</span>
+            </div>
           </div>
-          <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-            <Download className="w-4 h-4" />
-            Export CSV
-          </button>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Product
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  SKU
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Category
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Current Price
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Cost
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Margin
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Units Sold
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Revenue
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Stock
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Elasticity
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Competitor Avg
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {currentData.map((item) => {
-                const margin = ((item.currentPrice - item.cost) / item.currentPrice * 100).toFixed(1);
-                const revenue = item.currentPrice * item.unitsSold;
-                const priceCompetitive = item.currentPrice <= item.competitorAvgPrice;
+        {/* Table Controls */}
+        <div className="bg-white rounded-2xl shadow-md p-6 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600">Show</span>
+              <select 
+                value={entriesPerPage}
+                onChange={(e) => setEntriesPerPage(Number(e.target.value))}
+                className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+              </select>
+              <span className="text-sm text-gray-600">entries</span>
+            </div>
 
-                return (
-                  <tr key={item.sku} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <Link to={`/product/${item.sku}`} className="text-blue-600 hover:text-blue-800 font-medium">
-                        {item.productName}
-                      </Link>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {item.sku}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {item.category}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
-                      ${item.currentPrice.toFixed(2)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      ${item.cost.toFixed(2)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <span className={`${parseFloat(margin) >= 30 ? 'text-green-600' : 'text-yellow-600'} font-medium`}>
-                        {margin}%
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {item.unitsSold.toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      ${revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <span className={`${item.stockLevel < 50 ? 'text-red-600' : 'text-gray-900'}`}>
-                        {item.stockLevel}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {item.priceElasticity.toFixed(2)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      ${item.competitorAvgPrice.toFixed(2)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        priceCompetitive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                      }`}>
-                        {priceCompetitive ? 'Competitive' : 'High'}
-                      </span>
-                    </td>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600">Search:</span>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="border border-gray-300 rounded-lg pl-3 pr-10 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  placeholder="Search..."
+                />
+                <Search className="absolute right-3 top-2 text-gray-400" size={16} />
+              </div>
+            </div>
+          </div>
+
+          {/* Table */}
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-gray-50">
+                  {columns.slice(0, 8).map((column) => (
+                    <th key={column} className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider border-b whitespace-nowrap">
+                      <div className="flex items-center gap-2">
+                        <span className="text-indigo-500">📊</span>
+                        {column.replace(/_/g, ' ')}
+                      </div>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {productAnalysisData.slice(0, entriesPerPage).map((row, idx) => (
+                  <tr key={idx} className="hover:bg-gray-50 transition-colors">
+                    {columns.slice(0, 8).map((column) => (
+                      <td key={column} className="px-4 py-4 text-sm text-gray-700 whitespace-nowrap">
+                        {column === 'BILL_NUMBER' ? (
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center">
+                              <FileText className="text-indigo-600" size={16} />
+                            </div>
+                            <span className="font-medium">{row[column]}</span>
+                            <ExternalLink className="text-gray-400 cursor-pointer hover:text-indigo-600" size={14} />
+                          </div>
+                        ) : (
+                          String(row[column])
+                        )}
+                      </td>
+                    ))}
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination Info */}
+          <div className="mt-4 text-sm text-gray-600">
+            Showing 1 to {Math.min(entriesPerPage, productAnalysisData.length)} of {productAnalysisData.length} entries
+          </div>
         </div>
 
-        <div className="flex items-center justify-between mt-6 pt-6 border-t border-gray-200">
-          <div className="text-sm text-gray-700">
-            Showing <span className="font-medium">{startIndex + 1}</span> to{' '}
-            <span className="font-medium">{Math.min(endIndex, filteredData.length)}</span> of{' '}
-            <span className="font-medium">{filteredData.length}</span> results
+        {/* File Information Cards */}
+        <div className="grid md:grid-cols-2 gap-6">
+          <div className="bg-gradient-to-r from-teal-400 to-emerald-500 rounded-2xl p-6 text-white">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                <span className="text-xl">ℹ️</span>
+              </div>
+              <h3 className="text-xl font-bold">File Details</h3>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <p className="text-xs opacity-80">📄 File Name</p>
+                <p className="font-semibold">Jan_Mar_25_Item_Wise_Data_ip2io4nj.csv</p>
+              </div>
+              <div>
+                <p className="text-xs opacity-80">📊 Total Rows</p>
+                <p className="font-bold text-2xl">17177</p>
+              </div>
+              <div>
+                <p className="text-xs opacity-80">📋 Columns</p>
+                <p className="font-bold text-2xl">57</p>
+              </div>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
-              className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <span className="px-4 py-2 text-sm text-gray-700">
-              Page {currentPage} of {totalPages}
-            </span>
-            <button
-              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-              disabled={currentPage === totalPages}
-              className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
+
+          <div className="bg-white rounded-2xl p-6 shadow-md">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center">
+                <span className="text-xl">🔖</span>
+              </div>
+              <h3 className="text-xl font-bold text-gray-800">Column Headers</h3>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {columns.map((col, idx) => (
+                <span 
+                  key={idx}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium ${
+                    idx % 4 === 0 ? 'bg-teal-100 text-teal-700' :
+                    idx % 4 === 1 ? 'bg-purple-100 text-purple-700' :
+                    idx % 4 === 2 ? 'bg-blue-100 text-blue-700' :
+                    'bg-gray-100 text-gray-700'
+                  }`}
+                >
+                  {col.toLowerCase()}
+                </span>
+              ))}
+            </div>
           </div>
         </div>
-      </Card>
+      </div>
     </div>
   );
 }

@@ -3,47 +3,50 @@ export interface Product {
   name: string;
   currentPrice: number;
   recommendedPrice: number;
-  productCost: number;
   predictedProfit: number;
   profitGainLoss: number;
   demandChange: number;
   bpe: number;
   elasticity?: number;
+  productCost?: number;
+  category?: string;
+  stockLevel?: number;
+  competitorPrice?: number;
+  margin?: number;
+  lastPriceChange?: string;
+  priceHistory?: PriceHistoryEntry[];
 }
 
-export interface DashboardStats {
-  opportunitiesFound: number;
-  potentialProfitUplift: number;
-  productsOptimized: number;
-  averageElasticity: number;
-}
-
-export interface ProductData {
-  billNumber: string;
+export interface PriceHistoryEntry {
   date: string;
-  locationId: string;
-  locationName: string;
-  city: string;
-  cost: number;
-  brandName: string;
-  orderType: string;
-  billType: string;
-  billingType: string;
-  billStatus: string;
-  areaName: string;
-  platformName: string;
-  itemId: string;
-  itemName: string;
-  posCode: string;
-  defaultSalesPrice: number;
-  aggregatorSalesPrice: number;
-  category: string;
-  parentCategory: string;
-  modifierIds: string;
-  modifierNames: string;
-  itemTotalSalesPrice: number;
-  itemDiscounts: number;
-  itemCharges: number;
-  itemTaxes: number;
-  itemTotal: number;
+  price: number;
+  reason: string;
+  profitImpact: number;
+}
+
+export interface StatCardData {
+  icon: string;
+  value: string | number;
+  label: string;
+  color: string;
+}
+
+export interface ProductAnalysisRow {
+  [key: string]: string | number;
+}
+
+export interface ModelCoefficient {
+  variable: string;
+  coefficient: number;
+  stdError: number;
+  tValue: number;
+  pValue: number;
+  significance: string;
+}
+
+export interface PriceRecommendation {
+  type: string;
+  label: string;
+  value: number;
+  color: string;
 }
