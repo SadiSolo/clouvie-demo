@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import Header from '../components/Header';
 import { topMovers } from '../data/mockData';
-import { Package, TrendingUp, TrendingDown, AlertTriangle, AlertCircle, Clock, DollarSign, BarChart3, Target, RefreshCw, Download, Zap, Info, ChevronDown, ChevronUp, Calendar, Layers, ShoppingCart, Truck, Activity } from 'lucide-react';
-import { BarChart, Bar, LineChart, Line, AreaChart, Area, ComposedChart, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell, PieChart, Pie, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
+import { Package, AlertTriangle, AlertCircle, Clock, DollarSign, BarChart3, Target, RefreshCw, Download, Zap, Info, ChevronDown, ChevronUp, Calendar, Layers, ShoppingCart } from 'lucide-react';
+import { Bar, Line, Area, ComposedChart, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell, PieChart, Pie } from 'recharts';
 
 interface InventoryItem {
   date: string;

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import Header from '../components/Header';
 import { topMovers } from '../data/mockData';
 import { TrendingUp, TrendingDown, DollarSign, Package, Zap, Download, RefreshCw, Sparkles, BarChart3, Target, Activity, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Area, ComposedChart } from 'recharts';
+import { Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Area, ComposedChart } from 'recharts';
 
 interface Scenario {
   id: string;

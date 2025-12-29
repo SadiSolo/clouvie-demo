@@ -46,7 +46,7 @@ export default function BulkOptimization() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
+      <Header title="Bulk Optimization" />
       
       <div className="p-8">
         {/* Header */}

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import Header from '../components/Header';
 import { topMovers } from '../data/mockData';
-import { TrendingUp, TrendingDown, Activity, AlertTriangle, Zap, Target, BarChart3, Calendar, CloudRain, Megaphone, DollarSign, Users, Download, RefreshCw, Sparkles, Info, ChevronDown, ChevronUp, AlertCircle } from 'lucide-react';
+import { TrendingUp, TrendingDown, Activity, AlertTriangle, Zap, Target, BarChart3, Calendar, CloudRain, Megaphone, DollarSign, Users, Download, RefreshCw, Info, ChevronDown, ChevronUp, AlertCircle } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, AreaChart, Area, ComposedChart, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 
 interface DemandDataPoint {

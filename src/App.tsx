@@ -8,6 +8,7 @@ import ProductDetail from './pages/ProductDetail';
 import SalesForecasting from './pages/SalesForecasting';
 import DemandForecasting from './pages/DemandForecasting';
 import InventoryIntelligence from './pages/InventoryIntelligence';
+import Settings from './pages/Settings';
 import ComingSoon from './pages/ComingSoon';
 
 function App() {
@@ -26,7 +27,7 @@ function App() {
             <Route path="/demand-forecasting" element={<DemandForecasting />} />
             <Route path="/inventory-intelligence" element={<InventoryIntelligence />} />
             <Route path="/subscription" element={<ComingSoon title="Subscription" />} />
-            <Route path="/settings" element={<ComingSoon title="Settings" />} />
+            <Route path="/settings" element={<Settings />} />
             <Route path="/contact" element={<ComingSoon title="Contact Us" />} />
             <Route path="/support" element={<ComingSoon title="Support" />} />
           </Routes>
