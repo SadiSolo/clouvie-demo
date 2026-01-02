@@ -6,6 +6,7 @@ import {
   ArrowUpRight, ArrowDownRight, Activity, FileText, Calendar, AlertTriangle, Clock,
   DollarSign, ShieldCheck, RefreshCw, ShoppingCart
 } from 'lucide-react';
+import logo from '../../public/logo.svg'
 
 export default function Landing() {
   const navigate = useNavigate();
@@ -92,7 +93,7 @@ export default function Landing() {
           <div className="text-center mb-16">
             {/* Logo/Brand */}
             <div className="flex items-center justify-center mb-8">
-              <img src="/src/assets/logo.svg" alt="Clouvie" className="h-64" />
+              <img src={logo} alt="Clouvie" className="h-64" />
             </div>
 
             {/* Main Headline - Simpler, Bolder */}
