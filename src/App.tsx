@@ -10,6 +10,8 @@ import SalesForecasting from './pages/SalesForecasting';
 import DemandForecasting from './pages/DemandForecasting';
 import InventoryIntelligence from './pages/InventoryIntelligence';
 import Settings from './pages/Settings';
+import Support from './pages/Support';
+import Subscription from './pages/Subscription';
 import ComingSoon from './pages/ComingSoon';
 
 function App() {
@@ -88,7 +90,7 @@ function App() {
           <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
             <Sidebar />
             <div className="flex-1 overflow-auto">
-              <ComingSoon title="Subscription" />
+              <Subscription />
             </div>
           </div>
         } />
@@ -100,19 +102,11 @@ function App() {
             </div>
           </div>
         } />
-        <Route path="/contact" element={
-          <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
-            <Sidebar />
-            <div className="flex-1 overflow-auto">
-              <ComingSoon title="Contact Us" />
-            </div>
-          </div>
-        } />
         <Route path="/support" element={
           <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
             <Sidebar />
             <div className="flex-1 overflow-auto">
-              <ComingSoon title="Support" />
+              <Support />
             </div>
           </div>
         } />

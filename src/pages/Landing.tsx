@@ -4,7 +4,7 @@ import {
   TrendingUp, TrendingDown, Target, Package, Sparkles, 
   ArrowRight, CheckCircle, AlertCircle, Zap, Users, PlayCircle, 
   ArrowUpRight, ArrowDownRight, Activity, FileText, Calendar, AlertTriangle, Clock,
-  DollarSign, ShieldCheck, RefreshCw, ShoppingCart
+  DollarSign, ShieldCheck, RefreshCw, ShoppingCart, ChevronRight
 } from 'lucide-react';
 
 export default function Landing() {
@@ -83,46 +83,126 @@ export default function Landing() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-red-50 via-rose-50 to-pink-50">
+      {/* Navigation Header */}
+      <nav className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[95%] max-w-7xl">
+        <div className="bg-white/95 backdrop-blur-sm shadow-lg rounded-full border border-gray-200 px-8">
+          <div className="flex items-center justify-between h-20">
+            {/* Left side: Logo and nav links */}
+            <div className="flex items-center gap-10">
+              <a href="/" className="flex items-center">
+                <img src="/src/assets/logo.svg" alt="Clouvie" className="h-12" />
+              </a>
+              <div className="hidden md:flex items-center gap-8">
+                <a 
+                  href="#features" 
+                  className="text-gray-700 hover:text-[#8B1538] font-medium transition-colors text-base"
+                >
+                  Features
+                </a>
+                <a 
+                  href="#pricing" 
+                  className="text-gray-700 hover:text-[#8B1538] font-medium transition-colors text-base"
+                >
+                  Pricing
+                </a>
+              </div>
+            </div>
+
+            {/* Right side: CTA buttons */}
+            <div className="flex items-center gap-4">
+              <a
+                href="/dashboard"
+                className="hidden sm:block px-6 py-2.5 text-gray-700 hover:text-[#8B1538] font-medium transition-colors text-base"
+              >
+                View Demo
+              </a>
+              <button
+                onClick={scrollToWaitlist}
+                className="px-6 py-2.5 bg-gradient-to-r from-[#8B1538] to-[#A51A3F] text-white rounded-full font-semibold hover:shadow-md hover:scale-[1.02] transition-all text-base"
+              >
+                Join Waitlist
+              </button>
+            </div>
+          </div>
+        </div>
+      </nav>
+
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-white">
-        <div className="absolute inset-0 bg-gradient-to-br from-red-50 via-white to-rose-50"></div>
+      <section className="relative overflow-hidden bg-gradient-to-br from-rose-50 via-pink-50 to-red-50 pt-16">
+        {/* Animated background patterns */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute top-20 left-10 w-72 h-72 bg-red-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
+          <div className="absolute top-40 right-10 w-72 h-72 bg-rose-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
+          <div className="absolute -bottom-8 left-1/2 w-72 h-72 bg-pink-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000"></div>
+        </div>
         
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-32 relative z-10">
           <div className="text-center mb-16">
-            {/* Logo/Brand */}
-            <div className="flex items-center justify-center mb-8">
-              <img src="/src/assets/logo.svg" alt="Clouvie" className="h-64" />
-            </div>
-
             {/* Main Headline - Simpler, Bolder */}
-            <h2 className="text-6xl md:text-7xl font-bold text-gray-900 mb-8 leading-tight mt-(-10)">
-              <span className="text-[#8B1538]">
+            <h2 className="text-6xl md:text-7xl font-bold text-gray-900 mb-8 leading-tight mt-(-10) animate-slideUp">
+              <span className="text-[#8B1538] relative inline-block">
                 Your Chief Revenue Officer.
+                <svg className="absolute -bottom-2 left-0 w-full" height="12" viewBox="0 0 200 12" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M0 10 Q50 0, 100 10 T200 10" stroke="#8B1538" strokeWidth="4" fill="none" opacity="0.3"/>
+                </svg>
               </span>
               <br />
-              On Autopilot.
+              <span className="bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 bg-clip-text text-transparent">
+                On Autopilot.
+              </span>
             </h2>
 
             {/* Sub-headline - One clear benefit */}
-            <p className="text-2xl text-gray-600 mb-12 max-w-3xl mx-auto leading-relaxed">
+            <p className="text-2xl text-gray-600 mb-8 max-w-3xl mx-auto leading-relaxed animate-fadeIn animation-delay-500">
               See exactly how each pricing decision affects your profit—before you make it.
             </p>
 
-            {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
-              <a
-                href="/dashboard"
-                className="px-10 py-5 bg-[#8B1538] text-white rounded-xl font-semibold text-xl hover:bg-[#6B0F2A] transition-all shadow-xl hover:shadow-2xl"
-              >
-                Try the Demo
-              </a>
+            {/* Key benefits pills */}
+            <div className="flex flex-wrap items-center justify-center gap-3 mb-10 animate-fadeIn animation-delay-1000">
+              <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-full shadow-md border border-gray-200">
+                <CheckCircle className="w-4 h-4 text-green-600" />
+                <span className="text-sm font-medium text-gray-700">No complex setup</span>
+              </div>
+              <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-full shadow-md border border-gray-200">
+                <CheckCircle className="w-4 h-4 text-green-600" />
+                <span className="text-sm font-medium text-gray-700">AI-powered insights</span>
+              </div>
+              <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-full shadow-md border border-gray-200">
+                <CheckCircle className="w-4 h-4 text-green-600" />
+                <span className="text-sm font-medium text-gray-700">Instant results</span>
+              </div>
             </div>
 
-            {/* Trust line */}
-            <p className="text-gray-500">
-              Skip integrations. Get intelligence. In seconds!
-            </p>
+            {/* CTA Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-8 animate-scaleIn animation-delay-1500">
+              <a
+                href="/dashboard"
+                className="group px-10 py-5 bg-gradient-to-r from-[#8B1538] to-[#A51A3F] text-white rounded-xl font-semibold text-xl hover:shadow-2xl hover:scale-105 transition-all shadow-xl flex items-center gap-2"
+              >
+                Try the Demo
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </a>
+              <button
+                onClick={scrollToWaitlist}
+                className="px-10 py-5 bg-white text-[#8B1538] rounded-xl font-semibold text-xl hover:shadow-xl hover:scale-105 transition-all border-2 border-[#8B1538]"
+              >
+                Join Waitlist
+              </button>
+            </div>
+
+            {/* Trust line with icons */}
+            <div className="flex items-center justify-center gap-6 text-gray-500 animate-fadeIn animation-delay-2000">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="w-5 h-5 text-green-600" />
+                <span>Secure & encrypted</span>
+              </div>
+              <span className="text-gray-300">•</span>
+              <div className="flex items-center gap-2">
+                <Zap className="w-5 h-5 text-yellow-500" />
+                <span>No credit card required</span>
+              </div>
+            </div>
           </div>
 
           {/* Hero Image/Demo - Profit Curve & What-If Analysis */}
@@ -360,13 +440,13 @@ export default function Landing() {
       </section>
 
       {/* Clear Value Proposition - What It Actually Does */}
-      <section className="py-20 bg-white">
+      <section className="py-20 bg-gradient-to-br from-[#8B1538] to-[#6B0F2A]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-4xl font-bold text-white mb-4">
               Here's Exactly What Clouvie Does For You
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <p className="text-xl text-rose-100 max-w-3xl mx-auto">
               Stop wondering "what if?" and start seeing clear answers before making any decision
             </p>
           </div>
@@ -436,7 +516,7 @@ export default function Landing() {
       </section>
 
       {/* 3-Step Flow Section - Like Base44 */}
-      <section className="py-32 bg-white">
+      <section className="py-32 bg-gradient-to-br from-pink-50 to-rose-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-20">
             <p className="text-[#8B1538] font-semibold mb-4">HOW IT WORKS</p>
@@ -853,7 +933,7 @@ export default function Landing() {
               <h3 className="text-4xl font-bold text-gray-900 mb-6">
                 Know what's coming
               </h3>
-              <p className="text-xl text-gray-600 mb-6 leading-relaxed">
+              <p className="text-xl text-gray-700 mb-6 leading-relaxed">
                 AI predicts next month's sales with 94% accuracy. Plan inventory, staff, and cash flow with confidence.
               </p>
               <a href="/dashboard" className="text-rose-700 font-semibold text-lg hover:text-rose-800">
@@ -1096,7 +1176,7 @@ export default function Landing() {
       </section>
 
       {/* Clear Value Proposition - What It Actually Does */}
-      <section className="py-20 bg-white">
+      <section className="py-20 bg-gradient-to-br from-pink-50 to-rose-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">
@@ -1329,7 +1409,7 @@ export default function Landing() {
       </section>
 
       {/* Comparison Table - Why Clouvie vs Others */}
-      <section className="py-20 bg-gradient-to-b from-gray-50 to-white">
+      <section className="py-20 bg-gradient-to-b from-rose-50 to-pink-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">
@@ -1654,7 +1734,7 @@ export default function Landing() {
       </section>
 
       {/* Pricing Section */}
-      <section className="py-20 bg-gradient-to-b from-gray-50 to-white">
+      <section className="py-20 bg-gradient-to-b from-pink-50 to-rose-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">
