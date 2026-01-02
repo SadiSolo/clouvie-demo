@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 620 120">
+  <!-- Pie chart icon with C-shaped cutout -->
+  <g transform="translate(60, 60)">
+    <!-- Main circle -->
+    <circle cx="0" cy="0" r="45" fill="#8B1538"/>
+    <!-- White C-shaped cutout (inner circle creating the C) -->
+    <circle cx="8" cy="0" r="22" fill="#ffffff"/>
+  </g>
+  
+  <!-- Clouvie text -->
+  <text x="130" y="82" font-family="Arial, Helvetica, sans-serif" font-size="72" font-weight="bold" fill="#000000">Clouvie</text>
+</svg>

@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { 
   BarChart3, 
   FileUp, 
@@ -10,12 +10,16 @@ import {
   Settings,
   Phone,
   HelpCircle,
-  LogOut
+  LogOut,
+  Home,
+  Sparkles
 } from 'lucide-react';
 
 export default function Sidebar() {
+  const navigate = useNavigate();
+  
   const menuItems = [
-    { path: '/', icon: BarChart3, label: 'Dashboard' },
+    { path: '/dashboard', icon: BarChart3, label: 'Dashboard' },
     { path: '/files', icon: FileUp, label: 'Your Uploaded Files' },
     { path: '/price-optimization', icon: DollarSign, label: 'Price Optimization' },
     { path: '/sales-forecasting', icon: TrendingUp, label: 'Sales Forecasting' },
@@ -31,10 +35,18 @@ export default function Sidebar() {
     <div className="w-64 bg-white dark:bg-gray-800 h-screen flex flex-col border-r border-gray-200 dark:border-gray-700">
       {/* Logo */}
       <div className="p-6 flex items-center gap-3">
-        <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-pink-600 rounded-full flex items-center justify-center">
-          <div className="w-6 h-6 border-4 border-white rounded-full border-t-transparent transform rotate-45"></div>
-        </div>
-        <span className="text-2xl font-bold text-gray-800 dark:text-white">Clouvie</span>
+        <img src="/src/assets/logo.svg" alt="Clouvie" className="h-10" />
+      </div>
+
+      {/* Back to Homepage Button */}
+      <div className="px-4 mb-2">
+        <button
+          onClick={() => navigate('/')}
+          className="flex items-center gap-3 px-4 py-3 w-full text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-all border-2 border-gray-200 dark:border-gray-700"
+        >
+          <Home size={20} />
+          <span className="text-sm font-medium">Back to Homepage</span>
+        </button>
       </div>
 
       {/* Navigation */}
@@ -46,7 +58,7 @@ export default function Sidebar() {
             className={({ isActive }) =>
               `flex items-center gap-3 px-4 py-3 mb-1 rounded-xl transition-all duration-200 ${
                 isActive
-                  ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg'
+                  ? 'bg-[#8B1538] text-white shadow-lg'
                   : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
               }`
             }
@@ -57,9 +69,36 @@ export default function Sidebar() {
         ))}
       </nav>
 
+      {/* Join Waitlist CTA */}
+      <div className="px-4">
+        <div className="bg-gradient-to-br from-[#8B1538] to-[#6B0F2A] rounded-xl p-4 text-white">
+          <div className="flex items-center gap-2 mb-2">
+            <Sparkles className="w-5 h-5" />
+            <span className="font-bold text-sm">Like what you see?</span>
+          </div>
+          <p className="text-xs text-white/80 mb-3">
+            Join the waitlist to get early access when we launch!
+          </p>
+          <button
+            onClick={() => {
+              navigate('/');
+              setTimeout(() => {
+                const waitlistElement = document.getElementById('waitlist');
+                if (waitlistElement) {
+                  waitlistElement.scrollIntoView({ behavior: 'smooth' });
+                }
+              }, 100);
+            }}
+            className="w-full bg-white text-[#8B1538] px-4 py-2 rounded-lg font-semibold text-sm hover:bg-gray-100 transition-all"
+          >
+            Join Waitlist
+          </button>
+        </div>
+      </div>
+
       {/* Logout */}
-      <div className="p-4">
-        <button className="flex items-center gap-3 px-4 py-3 w-full text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-all">
+      <div className="px-4 pb-3">
+        <button className="flex items-center gap-3 px-4 py-2.5 w-full text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-all">
           <LogOut size={20} />
           <span className="text-sm font-medium">Logout</span>
         </button>
