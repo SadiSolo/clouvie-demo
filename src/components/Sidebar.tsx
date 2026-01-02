@@ -8,7 +8,6 @@ import {
   Package,
   CreditCard,
   Settings,
-  Phone,
   HelpCircle,
   LogOut,
   Home,
@@ -28,7 +27,6 @@ export default function Sidebar() {
     { path: '/inventory-intelligence', icon: Package, label: 'Inventory Intelligence' },
     { path: '/subscription', icon: CreditCard, label: 'Subscription' },
     { path: '/settings', icon: Settings, label: 'Setting' },
-    { path: '/contact', icon: Phone, label: 'Contact us' },
     { path: '/support', icon: HelpCircle, label: 'Support' },
   ];
 
