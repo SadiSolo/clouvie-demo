@@ -35,7 +35,7 @@ export default function Sidebar() {
     <div className="w-64 bg-white dark:bg-gray-800 h-screen flex flex-col border-r border-gray-200 dark:border-gray-700">
       {/* Logo */}
       <div className="p-6 flex items-center gap-3">
-        <img src="/src/assets/logo.svg" alt="Clouvie" className="h-10" />
+        <img src="/src/assets/logo.svg" alt="Clouvie" className="h-32 w-full" />
       </div>
 
       {/* Back to Homepage Button */}

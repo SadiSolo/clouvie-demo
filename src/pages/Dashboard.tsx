@@ -159,7 +159,7 @@ export default function Dashboard() {
   );
 
   return (
-    <div>
+    <div className="p-4">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Hello, Asif</h1>
         <p className="text-gray-600 dark:text-gray-400 mt-1">Dashboard</p>

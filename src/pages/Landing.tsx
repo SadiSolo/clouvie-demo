@@ -92,11 +92,11 @@ export default function Landing() {
           <div className="text-center mb-16">
             {/* Logo/Brand */}
             <div className="flex items-center justify-center mb-8">
-              <img src="/src/assets/logo.svg" alt="Clouvie" className="h-16" />
+              <img src="/src/assets/logo.svg" alt="Clouvie" className="h-64" />
             </div>
 
             {/* Main Headline - Simpler, Bolder */}
-            <h2 className="text-6xl md:text-7xl font-bold text-gray-900 mb-8 leading-tight">
+            <h2 className="text-6xl md:text-7xl font-bold text-gray-900 mb-8 leading-tight mt-(-10)">
               <span className="text-[#8B1538]">
                 Your Chief Revenue Officer.
               </span>
