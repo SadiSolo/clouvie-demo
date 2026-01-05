@@ -618,7 +618,7 @@ export default function Dashboard() {
             </div>
           </div>
           <div className="px-4 py-2 bg-white/20 rounded-lg backdrop-blur-sm">
-            <span className="text-white font-semibold">Max 50MB</span>
+            <span className="text-white font-semibold">Max 10MB</span>
           </div>
         </div>
       </div>
@@ -698,15 +698,6 @@ export default function Dashboard() {
                   <p className="font-medium text-gray-900 dark:text-gray-100">Maximum file size: 10MB</p>
                 </div>
               </div>
-            </div>
-
-            <div className="mt-6 p-4 bg-gray-900 rounded-xl">
-              <h4 className="text-sm font-semibold text-white mb-2">Sample CSV Structure</h4>
-              <pre className="text-xs text-pink-400 font-mono overflow-x-auto">
-<span className="text-purple-400">Product_Name</span>,<span className="text-purple-400">SKU</span>,<span className="text-purple-400">Current_Price</span>,<span className="text-purple-400">Category</span>,<span className="text-purple-400">Sales_Volume</span>
-{'\n'}
-<span className="text-blue-300">Sample{'\n'}Product</span>,<span className="text-blue-300">SKU001</span>,<span className="text-blue-300">29.99</span>,<span className="text-blue-300">Electronics</span>,<span className="text-blue-300">1000</span>
-              </pre>
             </div>
           </div>
         </div>
